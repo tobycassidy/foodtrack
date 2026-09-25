@@ -9,8 +9,8 @@
   </li>
 {% endfor %}
 </ul>
+<p class="fmeta addnew">Not the right one? <a href="/foods/new?name={{ q|urlencode }}">Add “{{ q }}” as a new food</a>.</p>
 {% elif q %}
 <p class="empty">Nothing saved called “{{ q }}”.
-  <a href="/foods/new?name={{ q|urlencode }}">Photograph its label</a> or
-  <a href="/foods/manual?name={{ q|urlencode }}">type the values</a>.</p>
+  <a href="/foods/new?name={{ q|urlencode }}">Add it</a> (label photo or name only); it'll be added to your basket when saved.</p>
 {% endif %}

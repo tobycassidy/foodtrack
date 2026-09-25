@@ -113,3 +113,5 @@ table.meals td:first-child { text-align: left; text-transform: capitalize; }
 @media (max-width: 480px) { .bars li { grid-template-columns: 7rem 1fr 6.5rem; } .extra .src { display: none; } }
 .basket .count { width: 3.6rem; }
 .basket .fname .fmeta { display: block; font-size: 0.78rem; }
+.linkish { display: block; width: 100%; margin-top: 0.4rem; font-size: 0.85rem; text-decoration: underline; }
+.addnew { margin: 0.3rem 0 0; }

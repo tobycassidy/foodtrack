@@ -6,24 +6,16 @@
   <input type="search" id="q" placeholder="Food name" autocomplete="off" autofocus>
   <div id="results"></div>
 
-  <form method="post" action="/log" id="mealform" {% if not prefill %}hidden{% endif %}>
+  <form method="post" action="/log" id="mealform" hidden>
     <input type="hidden" name="day" value="{{ day.isoformat() }}">
     <div class="mealpick">
       {% for m in MEALS %}<label class="chip"><input type="radio" name="meal" value="{{ m }}" {% if loop.first %}checked{% endif %}><span>{{ m }}</span></label>{% endfor %}
     </div>
-    <ul id="basket" class="basket">
-      {% if prefill %}
-      <li data-serving="{{ prefill.serving_size_g or '' }}">
-        <input type="hidden" name="food_id" value="{{ prefill.id }}">
-        <span class="fname">{{ prefill.name }}<span class="fmeta">{{ prefill.serving_desc or '' }}</span></span>
-        {% if prefill.serving_size_g %}<input type="number" class="count" step="any" min="0" inputmode="decimal" placeholder="×" value="1" title="Number of servings">{% endif %}
-        <input type="number" name="grams" step="any" min="0" inputmode="decimal" placeholder="g" required value="{{ prefill.serving_size_g or '' }}">
-        <button type="button" class="quiet rm" title="Remove">×</button>
-      </li>
-      {% endif %}
-    </ul>
+    <ul id="basket" class="basket"></ul>
+    <p class="hint">Keep searching to add more items. Need something that isn't saved yet? Add it via the search results; your basket is kept while you do.</p>
     <label>Note <input type="text" name="note" placeholder="optional, e.g. pre-run"></label>
     <button type="submit" class="primary">Save meal</button>
+    <button type="button" id="clear-basket" class="quiet linkish">Clear basket</button>
   </form>
 </section>
 
@@ -62,8 +54,50 @@
 </section>
 
 <script>
+// The basket lives in localStorage until "Save meal", so adding a brand-new food
+// (which leaves this page) doesn't throw away what you'd already added.
+const KEY = 'foodtrack.basket';
 const q = document.getElementById('q'), results = document.getElementById('results');
 const form = document.getElementById('mealform'), basket = document.getElementById('basket');
+const prefill = {{ ({"id": prefill.id, "name": prefill.name, "serving": prefill.serving_size_g or "", "servingDesc": prefill.serving_desc or ""} if prefill else None)|tojson }};
+
+function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {meal: null, items: []}; } catch { return {meal: null, items: []}; } }
+function save(state) { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
+function readState() {
+  const items = [...basket.children].map(li => ({
+    id: li.dataset.id, name: li.dataset.name, serving: li.dataset.serving, servingDesc: li.dataset.servingDesc,
+    count: li.querySelector('.count')?.value ?? '', grams: li.querySelector('input[name=grams]').value,
+  }));
+  const meal = form.querySelector('input[name=meal]:checked')?.value || null;
+  return {meal, items};
+}
+function persist() { save(readState()); form.hidden = !basket.children.length; }
+
+function addRow(f) {
+  const li = document.createElement('li');
+  Object.assign(li.dataset, {id: f.id, name: f.name, serving: f.serving || '', servingDesc: f.servingDesc || ''});
+  const hasServing = !!f.serving;
+  const count = f.count !== undefined ? f.count : 1;
+  const grams = f.grams !== undefined ? f.grams : (f.serving || '');
+  li.innerHTML = `<input type="hidden" name="food_id" value="${f.id}">
+    <span class="fname">${f.name}<span class="fmeta">${f.servingDesc || ''}</span></span>
+    ${hasServing ? `<input type="number" class="count" step="any" min="0" inputmode="decimal" placeholder="×" value="${count}" title="Number of servings">` : ''}
+    <input type="number" name="grams" step="any" min="0" inputmode="decimal" placeholder="g" required value="${grams}">
+    <button type="button" class="quiet rm" title="Remove">×</button>`;
+  basket.appendChild(li);
+  return li;
+}
+
+// Restore, then merge a food we just created (?log=id) if it isn't already there.
+const state = load();
+basket.innerHTML = '';
+state.items.forEach(addRow);
+if (state.meal) { const r = form.querySelector(`input[name=meal][value="${state.meal}"]`); if (r) r.checked = true; }
+let focusRow = null;
+if (prefill && ![...basket.children].some(li => li.dataset.id == prefill.id)) focusRow = addRow(prefill);
+persist();
+if (focusRow) { focusRow.querySelector('.count, input[name=grams]').select(); history.replaceState(null, '', location.pathname + (location.search.replace(/[?&]log=\d+/, '').replace(/^&/, '?'))); }
+
 let timer;
 q.addEventListener('input', () => {
   clearTimeout(timer);
@@ -72,20 +106,20 @@ q.addEventListener('input', () => {
     results.innerHTML = await r.text();
   }, 150);
 });
+// Enter with a single match adds it straight away.
+q.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); const picks = results.querySelectorAll('.pick'); if (picks.length === 1) picks[0].click(); }
+});
 results.addEventListener('click', e => {
   const b = e.target.closest('.pick'); if (!b) return;
-  const li = document.createElement('li');
-  li.dataset.serving = b.dataset.serving;
-  const hasServing = !!b.dataset.serving;
-  li.innerHTML = `<input type="hidden" name="food_id" value="${b.dataset.id}">
-    <span class="fname">${b.dataset.name}<span class="fmeta">${b.dataset.servingDesc || ''}</span></span>
-    ${hasServing ? '<input type="number" class="count" step="any" min="0" inputmode="decimal" placeholder="×" value="1" title="Number of servings">' : ''}
-    <input type="number" name="grams" step="any" min="0" inputmode="decimal" placeholder="g" required value="${b.dataset.serving}">
-    <button type="button" class="quiet rm" title="Remove">×</button>`;
-  basket.appendChild(li);
-  form.hidden = false;
+  const li = addRow({id: b.dataset.id, name: b.dataset.name, serving: b.dataset.serving, servingDesc: b.dataset.servingDesc});
+  persist();
   results.innerHTML = ''; q.value = '';
-  li.querySelector(hasServing ? '.count' : 'input[name=grams]').select();
+  li.querySelector('.count, input[name=grams]').select();
+});
+basket.addEventListener('click', e => {
+  if (!e.target.classList.contains('rm')) return;
+  e.target.parentElement.remove(); persist();
 });
 // Typing a count ("4" eggs) fills grams = count × serving size; editing grams directly clears the count.
 basket.addEventListener('input', e => {
@@ -96,11 +130,10 @@ basket.addEventListener('input', e => {
   } else if (e.target.name === 'grams') {
     const c = li.querySelector('.count'); if (c) c.value = '';
   }
+  persist();
 });
-basket.addEventListener('click', e => {
-  if (!e.target.classList.contains('rm')) return;
-  e.target.parentElement.remove();
-  if (!basket.children.length) form.hidden = true;
-});
+form.addEventListener('change', persist);
+form.addEventListener('submit', () => { try { localStorage.removeItem(KEY); } catch {} });
+document.getElementById('clear-basket').addEventListener('click', () => { basket.innerHTML = ''; persist(); });
 </script>
 {% endblock %}
