@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Add food{% endblock %}
+{% block content %}
+<h1>Add a food</h1>
+<p>Photograph the nutrition table. Fill the frame, keep it flat, and make sure the per-100g column is visible.</p>
+<form method="post" action="/foods/extract" enctype="multipart/form-data" id="photoform">
+  <label>Name (optional, overrides what the label says)
+    <input type="text" name="name" value="{{ name }}"></label>
+  <label class="camera">
+    <input type="file" name="photo" accept="image/*" capture="environment" required>
+    <span>Take or choose a photo</span>
+  </label>
+  <button type="submit" class="primary" id="go">Read the label</button>
+</form>
+<p class="foot">No label to hand? <a href="/foods/manual?name={{ name|urlencode }}">Type the values instead</a>.</p>
+<script>
+document.getElementById('photoform').addEventListener('submit', () => {
+  const b = document.getElementById('go'); b.disabled = true; b.textContent = 'Reading label…';
+});
+</script>
+{% endblock %}

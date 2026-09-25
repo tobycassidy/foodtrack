@@ -1,0 +1,16 @@
+{% if foods %}
+<ul class="results">
+{% for f in foods %}
+  <li>
+    <button type="button" class="pick" data-id="{{ f.id }}" data-name="{{ f.name }}{% if f.brand %} ({{ f.brand }}){% endif %}" data-serving="{{ f.serving_size_g or '' }}">
+      <span class="fname">{{ f.name }}</span>
+      <span class="fmeta">{% if f.brand %}{{ f.brand }} · {% endif %}{{ f.kcal|round|int if f.kcal is not none else '?' }} kcal, {{ f.protein_g if f.protein_g is not none else '?' }} g protein per 100 g</span>
+    </button>
+  </li>
+{% endfor %}
+</ul>
+{% elif q %}
+<p class="empty">Nothing saved called “{{ q }}”.
+  <a href="/foods/new?name={{ q|urlencode }}">Photograph its label</a> or
+  <a href="/foods/manual?name={{ q|urlencode }}">type the values</a>.</p>
+{% endif %}

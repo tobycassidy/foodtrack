@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Foods{% endblock %}
+{% block content %}
+<h1>Saved foods</h1>
+{% if foods %}
+<ul class="entries">
+{% for f in foods %}
+  <li>
+    <div>
+      <span class="fname">{{ f.name }}</span>
+      <span class="fmeta">{% if f.brand %}{{ f.brand }} · {% endif %}{{ f.kcal|round|int if f.kcal is not none else '?' }} kcal · P {{ f.protein_g if f.protein_g is not none else '?' }} · C {{ f.carbs_g if f.carbs_g is not none else '?' }} · F {{ f.fat_g if f.fat_g is not none else '?' }} per 100 g{% if f.extra %} · +{{ f.extra|length }} extra{% endif %}</span>
+    </div>
+    <span class="actions">
+      <a href="/foods/{{ f.id }}/edit">Edit</a>
+      <form method="post" action="/foods/{{ f.id }}/delete" onsubmit="return confirm('Delete this food and its log entries?')"><button class="quiet" title="Delete">×</button></form>
+    </span>
+  </li>
+{% endfor %}
+</ul>
+{% else %}
+<p class="empty">No foods yet. <a href="/foods/new">Add the first one</a>.</p>
+{% endif %}
+{% endblock %}

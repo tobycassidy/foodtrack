@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}FoodTrack{% endblock %}</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Log</a>
+  <a href="/report" {% if request.url.path == '/report' %}aria-current="page"{% endif %}>Report</a>
+  <a href="/foods" {% if request.url.path == '/foods' %}aria-current="page"{% endif %}>Foods</a>
+  <a href="/foods/new" class="add" {% if request.url.path == '/foods/new' %}aria-current="page"{% endif %}>Add food</a>
+</nav>
+<main>
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

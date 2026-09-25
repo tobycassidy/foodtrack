@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="logger">
+  <h1>Build a meal</h1>
+  <p class="hint">Search and add each item, set the grams, then save the whole meal in one go.</p>
+  <input type="search" id="q" placeholder="Food name" autocomplete="off" autofocus>
+  <div id="results"></div>
+
+  <form method="post" action="/log" id="mealform" {% if not prefill %}hidden{% endif %}>
+    <input type="hidden" name="day" value="{{ day.isoformat() }}">
+    <div class="mealpick">
+      {% for m in MEALS %}<label class="chip"><input type="radio" name="meal" value="{{ m }}" {% if loop.first %}checked{% endif %}><span>{{ m }}</span></label>{% endfor %}
+    </div>
+    <ul id="basket" class="basket">
+      {% if prefill %}
+      <li>
+        <input type="hidden" name="food_id" value="{{ prefill.id }}">
+        <span class="fname">{{ prefill.name }}</span>
+        <input type="number" name="grams" step="any" min="0" inputmode="decimal" placeholder="g" required value="{{ prefill.serving_size_g or '' }}">
+        <button type="button" class="quiet rm" title="Remove">×</button>
+      </li>
+      {% endif %}
+    </ul>
+    <label>Note <input type="text" name="note" placeholder="optional, e.g. pre-run"></label>
+    <button type="submit" class="primary">Save meal</button>
+  </form>
+</section>
+
+<section class="day">
+  <div class="dayhead">
+    <a href="/?day={{ (day.toordinal() - 1)|dateord }}">‹</a>
+    <h2>{{ day_label }}</h2>
+    <a href="/?day={{ (day.toordinal() + 1)|dateord }}">›</a>
+  </div>
+
+  {% if entries %}
+  <table class="totals">
+    <tr>{% for col, label, unit in NUTRIENTS %}<th>{{ label }}</th>{% endfor %}</tr>
+    <tr>{% for col, label, unit in NUTRIENTS %}<td>{{ totals[col]|round(1) }}{% if unit != 'kcal' %} {{ unit }}{% endif %}</td>{% endfor %}</tr>
+  </table>
+  <p class="foot"><a href="/report?day={{ day.isoformat() }}">Full report for this day</a></p>
+
+  {% for meal in MEALS if meal in totals.meals %}
+  <h3 class="mealhead">{{ meal }} <span class="fmeta">{{ totals.meals[meal].kcal|round|int }} kcal · {{ totals.meals[meal].protein_g|round(1) }} g protein · {{ totals.meals[meal].fibre_g|round(1) }} g fibre</span></h3>
+  <ul class="entries">
+  {% for e in entries if e.meal == meal %}
+    <li>
+      <div>
+        <span class="fname">{{ e.name }}</span>
+        <span class="fmeta">{{ e.grams|round(0)|int }} g · {{ e.scaled.kcal|round|int if e.scaled.kcal is not none else '?' }} kcal · {{ e.logged_at[11:16] }}{% if e.note %} · {{ e.note }}{% endif %}</span>
+      </div>
+      <form method="post" action="/log/{{ e.entry_id }}/delete"><input type="hidden" name="day" value="{{ day.isoformat() }}"><button class="quiet" title="Remove">×</button></form>
+    </li>
+  {% endfor %}
+  </ul>
+  {% endfor %}
+  {% else %}
+  <p class="empty">Nothing logged yet.</p>
+  {% endif %}
+  <p class="foot"><a href="/export.csv">Download everything as CSV</a></p>
+</section>
+
+<script>
+const q = document.getElementById('q'), results = document.getElementById('results');
+const form = document.getElementById('mealform'), basket = document.getElementById('basket');
+let timer;
+q.addEventListener('input', () => {
+  clearTimeout(timer);
+  timer = setTimeout(async () => {
+    const r = await fetch('/search?q=' + encodeURIComponent(q.value));
+    results.innerHTML = await r.text();
+  }, 150);
+});
+results.addEventListener('click', e => {
+  const b = e.target.closest('.pick'); if (!b) return;
+  const li = document.createElement('li');
+  li.innerHTML = `<input type="hidden" name="food_id" value="${b.dataset.id}">
+    <span class="fname">${b.dataset.name}</span>
+    <input type="number" name="grams" step="any" min="0" inputmode="decimal" placeholder="g" required value="${b.dataset.serving}">
+    <button type="button" class="quiet rm" title="Remove">×</button>`;
+  basket.appendChild(li);
+  form.hidden = false;
+  results.innerHTML = ''; q.value = '';
+  li.querySelector('input[name=grams]').focus();
+});
+basket.addEventListener('click', e => {
+  if (!e.target.classList.contains('rm')) return;
+  e.target.parentElement.remove();
+  if (!basket.children.length) form.hidden = true;
+});
+</script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h1>{{ title }}</h1>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% if notes %}<p class="notes">Model notes: {{ notes }}</p>{% endif %}
+
+<form method="post" action="{{ '/foods/' ~ food_id if food_id else '/foods' }}" class="foodform">
+  <input type="hidden" name="label_image" value="{{ food.label_image or '' }}">
+  <input type="hidden" name="source" value="{{ food.source or 'manual' }}">
+
+  {% if food.label_image %}
+  <details class="labelimg"><summary>Show the photo</summary><img src="/labels/{{ food.label_image }}" alt="Label photo"></details>
+  {% endif %}
+
+  <label>Name <input type="text" name="name" value="{{ food.name or '' }}" required></label>
+  <label>Brand <input type="text" name="brand" value="{{ food.brand or '' }}"></label>
+  <div class="row">
+    <label>Serving size (g) <input type="number" name="serving_size_g" step="any" inputmode="decimal" value="{{ food.serving_size_g if food.serving_size_g is not none else '' }}"></label>
+    <label>Serving description <input type="text" name="serving_desc" value="{{ food.serving_desc or '' }}" placeholder="1 bar (45g)"></label>
+  </div>
+
+  <h2>From the label, per 100 g</h2>
+  <div class="grid">
+  {% for col, label, unit in NUTRIENTS %}
+    <label>{{ label }} ({{ unit }})
+      <input type="number" name="{{ col }}" step="any" inputmode="decimal" value="{{ food[col] if food[col] is not none else '' }}"></label>
+  {% endfor %}
+  </div>
+
+  <h2>Extended attributes, per 100 g</h2>
+  <p class="hint">Rows marked <span class="src label">label</span> were read off the packet; <span class="src estimate">estimate</span> rows are the model's knowledge of this food. Delete anything you don't trust; the totals only use what's here.</p>
+  <div id="extras">
+  {% for k, v in food.extra.items() %}{% set m = food.extra_meta.get(k, {}) %}
+    <div class="row extra">
+      <input type="text" name="extra_key" value="{{ k }}" list="keylist">
+      <input type="number" name="extra_value" step="any" inputmode="decimal" value="{{ v }}">
+      <input type="hidden" name="extra_source" value="{{ m.source or 'manual' }}">
+      <input type="hidden" name="extra_confidence" value="{{ m.confidence or 'high' }}">
+      <input type="hidden" name="extra_basis" value="{{ m.basis or '' }}">
+      <span class="src {{ m.source or 'manual' }}" title="{{ m.basis or '' }}">{{ m.source or 'manual' }}{% if m.source == 'estimate' %} · {{ m.confidence }}{% endif %}</span>
+      <button type="button" class="quiet rm">×</button>
+    </div>
+  {% endfor %}
+  </div>
+  <datalist id="keylist">{% for k in N.KEYS %}<option value="{{ k }}">{{ N.BY_KEY[k].label }}</option>{% endfor %}</datalist>
+  <button type="button" id="add-extra">Add attribute</button>
+
+  <h2>Profile</h2>
+  {% set p = food.profile %}
+  <div class="grid">
+    {% for key, label in N.PROFILE_FIELDS %}
+    <label>{{ label }} <input type="text" name="profile_{{ key }}" value="{{ p.get(key, '') }}"></label>
+    {% endfor %}
+  </div>
+  <label>Fibre types (comma separated) <input type="text" name="profile_fibre_types" value="{{ p.get('fibre_types', [])|join(', ') }}"></label>
+  <label>Feeds (bacteria genera) <input type="text" name="profile_feeds" value="{{ p.get('feeds', [])|join(', ') }}"></label>
+  <label>Tags <input type="text" name="profile_tags" value="{{ p.get('tags', [])|join(', ') }}"></label>
+  <label>Notable compounds <input type="text" name="profile_notable_compounds" value="{{ p.get('notable_compounds', [])|join(', ') }}"></label>
+  <label>Training note <input type="text" name="profile_training_note" value="{{ p.get('training_note', '') }}"></label>
+  <label>Microbiome note <input type="text" name="profile_microbiome_note" value="{{ p.get('microbiome_note', '') }}"></label>
+
+  <button type="submit" class="primary">{{ 'Save changes' if food_id else 'Save food' }}</button>
+</form>
+
+<script>
+const extras = document.getElementById('extras');
+document.getElementById('add-extra').addEventListener('click', () => {
+  const d = document.createElement('div'); d.className = 'row extra';
+  d.innerHTML = '<input type="text" name="extra_key" placeholder="fibre_soluble_g" list="keylist"><input type="number" name="extra_value" step="any" inputmode="decimal" placeholder="0"><input type="hidden" name="extra_source" value="manual"><input type="hidden" name="extra_confidence" value="high"><input type="hidden" name="extra_basis" value=""><span class="src manual">manual</span><button type="button" class="quiet rm">×</button>';
+  extras.appendChild(d); d.querySelector('input').focus();
+});
+extras.addEventListener('click', e => { if (e.target.classList.contains('rm')) e.target.parentElement.remove(); });
+</script>
+{% endblock %}

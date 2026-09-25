@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Report{% endblock %}
+{% block content %}
+<div class="dayhead">
+  <a href="/report?day={{ (day.toordinal() - 1)|dateord }}">‹</a>
+  <h1>{{ day_label }}</h1>
+  <a href="/report?day={{ (day.toordinal() + 1)|dateord }}">›</a>
+</div>
+
+{% if not entries %}
+<p class="empty">Nothing logged for this day. <a href="/?day={{ day.isoformat() }}">Log a meal</a>.</p>
+{% else %}
+
+<h2>Energy and macros</h2>
+<div class="macrobar" title="Share of energy from protein / carbs / fat">
+  <span class="p" style="width:{{ macro_pct.protein|round(1) }}%"></span><span class="c" style="width:{{ macro_pct.carbs|round(1) }}%"></span><span class="f" style="width:{{ macro_pct.fat|round(1) }}%"></span>
+</div>
+<p class="fmeta">Protein {{ macro_pct.protein|round|int }}% · Carbs {{ macro_pct.carbs|round|int }}% · Fat {{ macro_pct.fat|round|int }}% of energy</p>
+
+<ul class="bars">
+{% for col, label, unit in NUTRIENTS %}
+  {% set t = core_targets.get(col) %}
+  <li>
+    <span class="blabel">{{ label }}</span>
+    <span class="btrack">{% if t %}<span class="bfill {% if totals[col] > t * 1.15 and col in ('sat_fat_g','sugars_g','salt_g') %}over{% endif %}" style="width:{{ [totals[col] / t * 100, 100]|min|round(1) }}%"></span>{% endif %}</span>
+    <span class="bval">{{ totals[col]|round(1) }} {{ unit if unit != 'kcal' else '' }}{% if t %} <em>/ {{ t }}</em>{% endif %}</span>
+  </li>
+{% endfor %}
+</ul>
+
+<h2>By meal</h2>
+<table class="meals">
+  <tr><th></th><th>kcal</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>Fibre</th></tr>
+  {% for meal in MEALS if meal in totals.meals %}{% set m = totals.meals[meal] %}
+  <tr><td>{{ meal }}</td><td>{{ m.kcal|round|int }}</td><td>{{ m.protein_g|round(1) }}</td><td>{{ m.carbs_g|round(1) }}</td><td>{{ m.fat_g|round(1) }}</td><td>{{ m.fibre_g|round(1) }}</td></tr>
+  {% endfor %}
+</table>
+
+{% for title, rows in groups %}
+<h2>{{ title }}</h2>
+<ul class="bars">
+{% for r in rows %}
+  <li>
+    <span class="blabel">{{ r.label }}</span>
+    <span class="btrack">{% if r.target %}<span class="bfill" style="width:{{ [r.pct, 100]|min|round(1) }}%"></span>{% endif %}</span>
+    <span class="bval">{{ r.value|round(2) }} {{ r.unit }}{% if r.target %} <em>{{ r.pct|round|int }}%</em>{% endif %}</span>
+  </li>
+{% endfor %}
+</ul>
+{% endfor %}
+
+{% if unknown %}
+<h2>Other tracked attributes</h2>
+<p class="extras">{% for k in unknown %}<span>{{ N.label_for(k) }}: {{ totals.extra[k]|round(2) }} {{ N.unit_for(k) }}</span>{% endfor %}</p>
+{% endif %}
+
+{% if totals.feeds %}
+<h2>Who you fed today</h2>
+<p class="hint">Gut bacteria genera the day's fibres preferentially support, counted across foods.</p>
+<p class="tags">{% for g, n in totals.feeds|dictsort(by='value', reverse=true) %}<span class="tag">{{ g }} <b>{{ n }}</b></span>{% endfor %}</p>
+{% endif %}
+
+{% if totals.tags %}
+<h2>Functional tags</h2>
+<p class="tags">{% for t, n in totals.tags|dictsort(by='value', reverse=true) %}<span class="tag">{{ t }} <b>{{ n }}</b></span>{% endfor %}</p>
+{% endif %}
+
+<h2>Foods</h2>
+<ul class="entries">
+{% for e in entries %}
+  <li><div>
+    <span class="fname">{{ e.name }} <span class="fmeta">{{ e.grams|round|int }} g · {{ e.meal }}</span></span>
+    {% if e.profile.microbiome_note or e.profile.training_note %}<span class="fmeta">{{ e.profile.microbiome_note or '' }} {{ e.profile.training_note or '' }}</span>{% endif %}
+  </div></li>
+{% endfor %}
+</ul>
+<p class="hint">Targets are EU/UK adult reference values in <code>nutrients.py</code>; edit them for your own plan. Estimated values (soluble fibre, most vitamins) are model estimates anchored to the label, not measurements.</p>
+{% endif %}
+{% endblock %}
