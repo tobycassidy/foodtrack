@@ -39,6 +39,8 @@ python check_gemini.py some_label.jpg   # same as the first, but with your own p
 ```
 It draws a synthetic oats label, runs it through the app's real extraction code, checks the numbers came back right, then does a name-only estimate for "whole eggs". Each step prints ok with timing, or the exact failure and fix. Run it in the same shell you launch uvicorn from: the app can only see `GEMINI_API_KEY` if that shell has it, and `uvicorn --reload` starts a child process that inherits the environment at launch, so restart uvicorn after changing `.env`.
 
+A 503 "high demand" error is Google's capacity, not your setup. The default model is `gemini-3.5-flash-lite`, which is rarely overloaded and more than adequate for labels; the newest Flash (`gemini-3.8-flash` as of September 2026) is usually the busy one, and the 2.5 models are restricted to accounts that used them before. The app retries three times with backoff, then falls back through `GEMINI_FALLBACK_MODELS` (default `gemini-3.6-flash`, `gemini-3.1-flash-lite`, `gemini-3.8-flash`), and the review form notes when a fallback answered. Step 3 of `check_gemini.py` prints every model your key can actually see; pick from that list if names have moved on.
+
 Extraction calls have a 90 s timeout (`GEMINI_TIMEOUT_S`), and photos are downscaled to 1600 px before upload, so a label read should take 5–20 s.
 
 ## 4. Test the workflow

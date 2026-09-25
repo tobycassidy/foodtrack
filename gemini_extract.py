@@ -17,7 +17,11 @@ from pydantic import BaseModel, Field
 
 import nutrients as N
 
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
+# Tried in order if MODEL is overloaded (503) or rate-limited (429). Comma-separated to override.
+FALLBACK_MODELS = [m.strip() for m in os.environ.get(
+    "GEMINI_FALLBACK_MODELS", "gemini-3.6-flash,gemini-3.1-flash-lite,gemini-3.8-flash").split(",") if m.strip()]
+RETRIES_PER_MODEL = 3
 TIMEOUT_MS = int(os.environ.get("GEMINI_TIMEOUT_S", "90")) * 1000
 MAX_EDGE = 1600  # px; labels are legible well below this and uploads get much faster
 
@@ -155,15 +159,9 @@ def extract_label(image_bytes: bytes | None, mime_type: str | None, food_name: s
         image_bytes, mime_type = shrink_image(image_bytes, mime_type)
         contents.insert(0, types.Part.from_bytes(data=image_bytes, mime_type=mime_type))
     client = genai.Client(http_options=types.HttpOptions(timeout=TIMEOUT_MS))  # reads GEMINI_API_KEY
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=contents,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=Extraction,
-            temperature=0,
-        ),
-    )
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json", response_schema=Extraction)
+    response, used_model = _generate_with_fallback(client, contents, config)
     parsed = Extraction.model_validate_json(response.text)
     out = parsed.model_dump(exclude={"label_extra", "estimates", "profile"})
     out["extra"], out["extra_meta"] = {}, {}
@@ -177,7 +175,32 @@ def extract_label(image_bytes: bytes | None, mime_type: str | None, food_name: s
         out["extra"][n.key] = n.value
         out["extra_meta"][n.key] = {"source": "estimate", "confidence": n.confidence, "basis": n.basis}
     out["profile"] = parsed.profile.model_dump()
+    if used_model != MODEL:
+        out["notes"] = f"(answered by fallback model {used_model}) " + (out.get("notes") or "")
     return out
+
+
+def _generate_with_fallback(client, contents, config):
+    """Retry with backoff on 503/429, then move down the model list. Raises the last error."""
+    import time
+
+    last_error = None
+    for model in [MODEL, *[m for m in FALLBACK_MODELS if m != MODEL]]:
+        for attempt in range(RETRIES_PER_MODEL):
+            try:
+                return client.models.generate_content(model=model, contents=contents, config=config), model
+            except Exception as exc:
+                last_error = exc
+                code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
+                text = str(exc)
+                busy = code in (429, 503) or "503" in text or "429" in text or "UNAVAILABLE" in text or "RESOURCE_EXHAUSTED" in text
+                if not busy:
+                    raise
+                wait = 2 * (attempt + 1)
+                print(f"[gemini] {model} busy ({code or 'overloaded'}), attempt {attempt + 1}/{RETRIES_PER_MODEL}, waiting {wait}s")
+                time.sleep(wait)
+        print(f"[gemini] giving up on {model}, trying next model")
+    raise last_error
 
 
 if __name__ == "__main__":
