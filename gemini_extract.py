@@ -18,6 +18,24 @@ from pydantic import BaseModel, Field
 import nutrients as N
 
 MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
+TIMEOUT_MS = int(os.environ.get("GEMINI_TIMEOUT_S", "90")) * 1000
+MAX_EDGE = 1600  # px; labels are legible well below this and uploads get much faster
+
+
+def shrink_image(data: bytes, mime: str) -> tuple[bytes, str]:
+    """Downscale big phone photos and convert HEIC etc. to JPEG. Falls back to the original on any failure."""
+    try:
+        import io
+        from PIL import Image, ImageOps
+        img = Image.open(io.BytesIO(data))
+        img = ImageOps.exif_transpose(img).convert("RGB")
+        if max(img.size) > MAX_EDGE:
+            img.thumbnail((MAX_EDGE, MAX_EDGE))
+        buf = io.BytesIO()
+        img.save(buf, "JPEG", quality=85)
+        return buf.getvalue(), "image/jpeg"
+    except Exception:
+        return data, mime
 
 
 class Nutrient(BaseModel):
@@ -67,14 +85,31 @@ def _key_table() -> str:
     return "\n".join(lines)
 
 
-def build_prompt(food_name: str) -> str:
+def build_prompt(food_name: str, has_image: bool = True) -> str:
+    if has_image:
+        inputs = f"""- Food as typed by the user: "{food_name or 'not given'}"
+- A photo of the nutrition label (attached)."""
+        task1 = "TASK 1 – READ THE LABEL (source of truth)"
+    else:
+        inputs = f"""- Food as typed by the user: "{food_name}"
+- No label photo: this is a whole or unpackaged food (eggs, chicken thigh, 95/5 beef mince, an apple...)."""
+        task1 = """TASK 1 – FILL THE CORE FIELDS FROM REFERENCE DATA
+There is no label. Use standard composition tables (USDA FoodData Central, McCance & Widdowson) for this
+exact food as described, raw unless the name says cooked. Assume typical UK/EU retail products. Mark every
+value as an estimate and state the reference food you used in notes.
+Set serving_size_g to the natural unit of this food and describe it in serving_desc, e.g.
+  eggs -> serving_size_g 55, serving_desc "1 medium egg (55 g)"
+  chicken drumstick -> ~95 g edible with bone removed, "1 drumstick (approx 95 g, meat only)"
+  chicken thigh -> "1 thigh, boneless skinless (approx 110 g)"; whole chicken leg -> thigh + drumstick
+  beef mince, rice, oats, vegetables sold loose -> 100 g, "100 g"
+State clearly in serving_desc whether weight is raw or cooked and with or without bone/skin."""
+
     return f"""You are a nutrition scientist helping build a personal food database.
 
 INPUT
-- Food as typed by the user: "{food_name or 'not given'}"
-- A photo of the nutrition label (attached).
+{inputs}
 
-TASK 1 – READ THE LABEL (source of truth)
+{task1}
 Extract every printed nutrient PER 100 g (per 100 ml for drinks) into the core fields and `label_extra`.
 - Convert kJ to kcal (÷4.184) and sodium to salt (×2.5) if needed; say so in notes.
 - If only per-serving values are printed, convert using the serving size and say so in notes.
@@ -107,16 +142,22 @@ and one-sentence notes on training/energy relevance and microbiome relevance.
 Return JSON only, matching the schema. Use the typed name as the food name unless it is clearly wrong."""
 
 
-def extract_label(image_bytes: bytes, mime_type: str, food_name: str = "") -> dict:
+def extract_label(image_bytes: bytes | None, mime_type: str | None, food_name: str = "") -> dict:
     """Return a food dict ready for the review form:
-    core fields, extra {key: value}, extra_meta {key: {source, confidence, basis}}, profile {...}, notes."""
+    core fields, extra {key: value}, extra_meta {key: {source, confidence, basis}}, profile {...}, notes.
+    With image_bytes=None the food is estimated from its name alone (whole/unpackaged foods)."""
     from google import genai
     from google.genai import types
 
-    client = genai.Client()  # reads GEMINI_API_KEY
+    has_image = image_bytes is not None
+    contents = [build_prompt(food_name, has_image)]
+    if has_image:
+        image_bytes, mime_type = shrink_image(image_bytes, mime_type)
+        contents.insert(0, types.Part.from_bytes(data=image_bytes, mime_type=mime_type))
+    client = genai.Client(http_options=types.HttpOptions(timeout=TIMEOUT_MS))  # reads GEMINI_API_KEY
     response = client.models.generate_content(
         model=MODEL,
-        contents=[types.Part.from_bytes(data=image_bytes, mime_type=mime_type), build_prompt(food_name)],
+        contents=contents,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
             response_schema=Extraction,
@@ -126,9 +167,10 @@ def extract_label(image_bytes: bytes, mime_type: str, food_name: str = "") -> di
     parsed = Extraction.model_validate_json(response.text)
     out = parsed.model_dump(exclude={"label_extra", "estimates", "profile"})
     out["extra"], out["extra_meta"] = {}, {}
+    label_source = "label" if has_image else "estimate"
     for n in parsed.label_extra:
         out["extra"][n.key] = n.value
-        out["extra_meta"][n.key] = {"source": "label", "confidence": "high", "basis": n.basis}
+        out["extra_meta"][n.key] = {"source": label_source, "confidence": "high" if has_image else n.confidence, "basis": n.basis}
     for n in parsed.estimates:
         if n.key in out["extra"]:
             continue  # the label wins over an estimate
@@ -139,12 +181,16 @@ def extract_label(image_bytes: bytes, mime_type: str, food_name: str = "") -> di
 
 
 if __name__ == "__main__":
-    # Quick CLI test:  python gemini_extract.py path/to/label.jpg "porridge oats"
+    # Label:      python gemini_extract.py path/to/label.jpg "porridge oats"
+    # Name only:  python gemini_extract.py --name "whole eggs"
     import mimetypes
     import sys
 
-    path = sys.argv[1]
-    name = sys.argv[2] if len(sys.argv) > 2 else ""
-    mime = mimetypes.guess_type(path)[0] or "image/jpeg"
-    with open(path, "rb") as f:
-        print(json.dumps(extract_label(f.read(), mime, name), indent=2))
+    if sys.argv[1] == "--name":
+        print(json.dumps(extract_label(None, None, sys.argv[2]), indent=2))
+    else:
+        path = sys.argv[1]
+        name = sys.argv[2] if len(sys.argv) > 2 else ""
+        mime = mimetypes.guess_type(path)[0] or "image/jpeg"
+        with open(path, "rb") as f:
+            print(json.dumps(extract_label(f.read(), mime, name), indent=2))

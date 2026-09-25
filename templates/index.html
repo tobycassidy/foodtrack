@@ -13,9 +13,10 @@
     </div>
     <ul id="basket" class="basket">
       {% if prefill %}
-      <li>
+      <li data-serving="{{ prefill.serving_size_g or '' }}">
         <input type="hidden" name="food_id" value="{{ prefill.id }}">
-        <span class="fname">{{ prefill.name }}</span>
+        <span class="fname">{{ prefill.name }}<span class="fmeta">{{ prefill.serving_desc or '' }}</span></span>
+        {% if prefill.serving_size_g %}<input type="number" class="count" step="any" min="0" inputmode="decimal" placeholder="×" value="1" title="Number of servings">{% endif %}
         <input type="number" name="grams" step="any" min="0" inputmode="decimal" placeholder="g" required value="{{ prefill.serving_size_g or '' }}">
         <button type="button" class="quiet rm" title="Remove">×</button>
       </li>
@@ -74,14 +75,27 @@ q.addEventListener('input', () => {
 results.addEventListener('click', e => {
   const b = e.target.closest('.pick'); if (!b) return;
   const li = document.createElement('li');
+  li.dataset.serving = b.dataset.serving;
+  const hasServing = !!b.dataset.serving;
   li.innerHTML = `<input type="hidden" name="food_id" value="${b.dataset.id}">
-    <span class="fname">${b.dataset.name}</span>
+    <span class="fname">${b.dataset.name}<span class="fmeta">${b.dataset.servingDesc || ''}</span></span>
+    ${hasServing ? '<input type="number" class="count" step="any" min="0" inputmode="decimal" placeholder="×" value="1" title="Number of servings">' : ''}
     <input type="number" name="grams" step="any" min="0" inputmode="decimal" placeholder="g" required value="${b.dataset.serving}">
     <button type="button" class="quiet rm" title="Remove">×</button>`;
   basket.appendChild(li);
   form.hidden = false;
   results.innerHTML = ''; q.value = '';
-  li.querySelector('input[name=grams]').focus();
+  li.querySelector(hasServing ? '.count' : 'input[name=grams]').select();
+});
+// Typing a count ("4" eggs) fills grams = count × serving size; editing grams directly clears the count.
+basket.addEventListener('input', e => {
+  const li = e.target.closest('li'), serving = parseFloat(li.dataset.serving);
+  if (e.target.classList.contains('count') && serving) {
+    const n = parseFloat(e.target.value);
+    li.querySelector('input[name=grams]').value = n ? Math.round(n * serving * 10) / 10 : '';
+  } else if (e.target.name === 'grams') {
+    const c = li.querySelector('.count'); if (c) c.value = '';
+  }
 });
 basket.addEventListener('click', e => {
   if (!e.target.classList.contains('rm')) return;

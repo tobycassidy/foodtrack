@@ -111,3 +111,5 @@ table.meals td:first-child { text-align: left; text-transform: capitalize; }
 .src.estimate { background: #fff6e0; color: #8a6414; }
 .src.manual { background: #eee; color: var(--muted); }
 @media (max-width: 480px) { .bars li { grid-template-columns: 7rem 1fr 6.5rem; } .extra .src { display: none; } }
+.basket .count { width: 3.6rem; }
+.basket .fname .fmeta { display: block; font-size: 0.78rem; }

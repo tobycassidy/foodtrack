@@ -162,30 +162,38 @@ def foods(request: Request):
 
 @app.get("/foods/new", response_class=HTMLResponse)
 def food_new(request: Request, name: str = ""):
-    return templates.TemplateResponse(request, "food_new.html", {"name": name})
+    return templates.TemplateResponse(request, "food_new.html", {"name": name, "error": None})
 
 
 @app.post("/foods/extract", response_class=HTMLResponse)
-async def food_extract(request: Request, photo: UploadFile, name: str = Form("")):
-    image_bytes = await photo.read()
-    mime = photo.content_type or "image/jpeg"
-    ext = {"image/png": ".png", "image/webp": ".webp", "image/heic": ".heic"}.get(mime, ".jpg")
-    filename = f"{datetime.now():%Y%m%d-%H%M%S}-{uuid.uuid4().hex[:6]}{ext}"
-    (db.IMAGE_DIR / filename).write_bytes(image_bytes)
+async def food_extract(request: Request, name: str = Form(""), photo: UploadFile | None = None):
+    """With a photo: read the label and estimate the rest. Without: estimate everything from the name."""
+    name = name.strip()
+    image_bytes, mime, filename = None, None, None
+    if photo is not None and photo.filename:
+        image_bytes = await photo.read()
+        mime = photo.content_type or "image/jpeg"
+        ext = {"image/png": ".png", "image/webp": ".webp", "image/heic": ".heic"}.get(mime, ".jpg")
+        filename = f"{datetime.now():%Y%m%d-%H%M%S}-{uuid.uuid4().hex[:6]}{ext}"
+        (db.IMAGE_DIR / filename).write_bytes(image_bytes)
+    if image_bytes is None and not name:
+        return templates.TemplateResponse(request, "food_new.html", {
+            "name": "", "error": "Give a name, a label photo, or both."})
 
     error = None
     try:
-        food = extract_label(image_bytes, mime, name.strip())
+        food = extract_label(image_bytes, mime, name)
     except Exception as exc:  # show the error on the form rather than a 500
         error = f"Gemini extraction failed: {exc}"
-        food = {"name": name.strip(), "extra": {}, "extra_meta": {}, "profile": {}}
-    if name.strip() and not food.get("name"):
-        food["name"] = name.strip()
+        food = {"name": name, "extra": {}, "extra_meta": {}, "profile": {}}
+    if name and not food.get("name"):
+        food["name"] = name
     food["label_image"] = filename
-    food["source"] = "gemini"
+    food["source"] = "gemini-label" if image_bytes else "gemini-estimate"
     return templates.TemplateResponse(request, "food_form.html", {
-        "food": food, "food_id": None, "error": error,
-        "notes": food.get("notes"), "title": "Check the extracted values",
+        "food": food, "food_id": None, "error": error, "notes": food.get("notes"),
+        "title": "Check the extracted values" if image_bytes else "Check the estimated values",
+        "estimated_all": image_bytes is None,
     })
 
 

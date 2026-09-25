@@ -30,19 +30,32 @@ Open http://localhost:8000. From your phone on the same Wi‑Fi, open `http://<l
 
 Data lives in `./data/` (`food.db` plus `labels/` photos). Set `FOODTRACK_DATA` to move it.
 
-## 3. Test the workflow
+## 3. Check Gemini works before anything else
+
+```bash
+python check_gemini.py                  # everything, using a generated test label; needs no input
+python check_gemini.py --quick          # just key, connectivity, model, text
+python check_gemini.py some_label.jpg   # same as the first, but with your own photo
+```
+It draws a synthetic oats label, runs it through the app's real extraction code, checks the numbers came back right, then does a name-only estimate for "whole eggs". Each step prints ok with timing, or the exact failure and fix. Run it in the same shell you launch uvicorn from: the app can only see `GEMINI_API_KEY` if that shell has it, and `uvicorn --reload` starts a child process that inherits the environment at launch, so restart uvicorn after changing `.env`.
+
+Extraction calls have a 90 s timeout (`GEMINI_TIMEOUT_S`), and photos are downscaled to 1600 px before upload, so a label read should take 5–20 s.
+
+## 4. Test the workflow
 
 1. **Manual food first.** Log → type "test" → *type the values* → fill a few numbers, add an extended attribute (pick `fibre_soluble_g` from the dropdown, 1.5) → Save. You land on the log with it in the basket.
 2. **Batch a meal.** Search "te", tap it to add it to the basket again with a different weight, choose *breakfast*, Save meal. Both entries appear under Breakfast with the meal subtotal.
 3. **Report.** Open Report: macro split, bars against targets, per-meal table, fibre/vitamin/mineral groups, "who you fed today".
-4. **Label extraction.** On your phone: Add food → type the name (this matters: it's what Gemini uses to estimate what the label omits) → photograph the nutrition table → *Read the label*. Check the form: green rows came off the packet, amber rows are estimates with a confidence. Delete anything you don't trust, edit the profile, save.
-5. **Prompt tuning without the UI:**
+4. **Whole foods, no label.** Add food → type "whole eggs" → *Look it up* with no photo. Gemini fills everything from reference data and sets the serving to 1 egg (~55 g). Save, then in the basket type 4 in the × box: grams fills in as 220. Same for "chicken drumstick", "chicken thigh", "95/5 beef mince" (serving 100 g).
+5. **Label extraction.** On your phone: Add food → type the name (this matters: it's what Gemini uses to estimate what the label omits) → photograph the nutrition table → *Read the label*. Check the form: green rows came off the packet, amber rows are estimates with a confidence. Delete anything you don't trust, edit the profile, save.
+6. **Prompt tuning without the UI:**
    ```bash
    python gemini_extract.py path/to/label.jpg "porridge oats"
+   python gemini_extract.py --name "whole chicken leg"
    ```
    Prints the full JSON. Edit `build_prompt()` in `gemini_extract.py` to steer it.
 
-## 4. Put it in git
+## 5. Put it in git
 
 You already use `~/Documents/repos`, so:
 
@@ -63,7 +76,7 @@ git push -u origin main
 
 `.gitignore` already excludes `.env`, `data/` and `.venv/`. Your food database therefore is not in git; if you want it backed up, either remove `data/` from `.gitignore` (fine for a private repo) or copy the folder elsewhere periodically.
 
-## 5. Things you'll probably want to tweak
+## 6. Things you'll probably want to tweak
 
 - **Targets**: `nutrients.py`, `REGISTRY` (per nutrient) and `CORE_TARGETS`. Defaults are EU/UK adult reference values, not a training plan; set protein, carbs and kcal to yours.
 - **Which nutrients Gemini estimates**: also `REGISTRY`. Adding a key there adds it to the prompt, the report and the form dropdown in one go.
@@ -71,7 +84,7 @@ git push -u origin main
 - **Core label columns**: `NUTRIENTS` in `db.py`. Adding one needs a row in `MIGRATIONS` too, so existing databases get the column.
 - **Extraction prompt / schema**: `gemini_extract.py`.
 
-## 6. Moving to a Raspberry Pi
+## 7. Moving to a Raspberry Pi
 
 Nothing changes in the code. On the Pi (Pi 4/5, 64‑bit Raspberry Pi OS):
 

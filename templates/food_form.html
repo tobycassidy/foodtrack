@@ -3,6 +3,7 @@
 {% block content %}
 <h1>{{ title }}</h1>
 {% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% if estimated_all %}<p class="notes">No label was used: every value here is an estimate from reference data for “{{ food.name }}”. Check the serving size and whether it's raw or cooked.</p>{% endif %}
 {% if notes %}<p class="notes">Model notes: {{ notes }}</p>{% endif %}
 
 <form method="post" action="{{ '/foods/' ~ food_id if food_id else '/foods' }}" class="foodform">

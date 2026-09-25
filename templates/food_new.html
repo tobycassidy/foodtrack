@@ -2,20 +2,20 @@
 {% block title %}Add food{% endblock %}
 {% block content %}
 <h1>Add a food</h1>
-<p>Photograph the nutrition table. Fill the frame, keep it flat, and make sure the per-100g column is visible.</p>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
 <form method="post" action="/foods/extract" enctype="multipart/form-data" id="photoform">
-  <label>Name (optional, overrides what the label says)
-    <input type="text" name="name" value="{{ name }}"></label>
+  <label>Name <input type="text" name="name" value="{{ name }}" placeholder="Whole eggs, chicken thigh, 95/5 beef mince, Jumbo oats…"></label>
+  <p class="hint">Packaged food: photograph the nutrition table (flat, filling the frame, per-100g column visible). Whole food with no label: just the name is enough; the natural unit (1 egg, 1 drumstick) becomes the serving size.</p>
   <label class="camera">
-    <input type="file" name="photo" accept="image/*" capture="environment" required>
-    <span>Take or choose a photo</span>
+    <input type="file" name="photo" accept="image/*" capture="environment">
+    <span>Take or choose a label photo (optional)</span>
   </label>
-  <button type="submit" class="primary" id="go">Read the label</button>
+  <button type="submit" class="primary" id="go">Look it up</button>
 </form>
-<p class="foot">No label to hand? <a href="/foods/manual?name={{ name|urlencode }}">Type the values instead</a>.</p>
+<p class="foot">Or <a href="/foods/manual?name={{ name|urlencode }}">type every value by hand</a>.</p>
 <script>
 document.getElementById('photoform').addEventListener('submit', () => {
-  const b = document.getElementById('go'); b.disabled = true; b.textContent = 'Reading label…';
+  const b = document.getElementById('go'); b.disabled = true; b.textContent = 'Asking Gemini…';
 });
 </script>
 {% endblock %}
