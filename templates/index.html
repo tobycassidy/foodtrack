@@ -12,6 +12,25 @@
       {% for m in MEALS %}<label class="chip"><input type="radio" name="meal" value="{{ m }}" {% if loop.first %}checked{% endif %}><span>{{ m }}</span></label>{% endfor %}
     </div>
     <ul id="basket" class="basket"></ul>
+
+    <div id="basket-summary" class="basket-summary">
+      <div class="summary-head">
+        <span class="summary-title">Meal breakdown</span>
+        <span class="summary-kcal"><strong id="sum-kcal">0</strong> kcal</span>
+      </div>
+      <div class="macrobar basket-bar" id="basket-macrobar" title="Macro calorie ratio">
+        <span class="p" id="sum-bar-p" style="width: 0%"></span>
+        <span class="c" id="sum-bar-c" style="width: 0%"></span>
+        <span class="f" id="sum-bar-f" style="width: 0%"></span>
+      </div>
+      <div class="summary-macros">
+        <span class="macro-pill p">Protein: <strong id="sum-p">0</strong>g <em id="sum-pct-p">(0%)</em></span>
+        <span class="macro-pill c">Carbs: <strong id="sum-c">0</strong>g <em id="sum-pct-c">(0%)</em></span>
+        <span class="macro-pill f">Fat: <strong id="sum-f">0</strong>g <em id="sum-pct-f">(0%)</em></span>
+        <span class="macro-pill fibre">Fibre: <strong id="sum-fibre">0</strong>g</span>
+      </div>
+    </div>
+
     <p class="hint">Keep searching to add more items. Need something that isn't saved yet? Add it via the search results; your basket is kept while you do.</p>
     <label>Note <input type="text" name="note" placeholder="optional, e.g. pre-run"></label>
     <button type="submit" class="primary">Save meal</button>
@@ -59,23 +78,82 @@
 const KEY = 'foodtrack.basket';
 const q = document.getElementById('q'), results = document.getElementById('results');
 const form = document.getElementById('mealform'), basket = document.getElementById('basket');
-const prefill = {{ ({"id": prefill.id, "name": prefill.name, "serving": prefill.serving_size_g or "", "servingDesc": prefill.serving_desc or ""} if prefill else None)|tojson }};
+const prefill = {{ ({"id": prefill.id, "name": prefill.name, "serving": prefill.serving_size_g or "", "servingDesc": prefill.serving_desc or "", "kcal": prefill.kcal if prefill.kcal is not none else "", "protein": prefill.protein_g if prefill.protein_g is not none else "", "carbs": prefill.carbs_g if prefill.carbs_g is not none else "", "fat": prefill.fat_g if prefill.fat_g is not none else "", "fibre": prefill.fibre_g if prefill.fibre_g is not none else ""} if prefill else None)|tojson }};
 
 function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {meal: null, items: []}; } catch { return {meal: null, items: []}; } }
 function save(state) { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
 function readState() {
   const items = [...basket.children].map(li => ({
     id: li.dataset.id, name: li.dataset.name, serving: li.dataset.serving, servingDesc: li.dataset.servingDesc,
+    kcal: li.dataset.kcal || '', protein: li.dataset.protein || '', carbs: li.dataset.carbs || '',
+    fat: li.dataset.fat || '', fibre: li.dataset.fibre || '',
     count: li.querySelector('.count')?.value ?? '', grams: li.querySelector('input[name=grams]').value,
   }));
   const meal = form.querySelector('input[name=meal]:checked')?.value || null;
   return {meal, items};
 }
-function persist() { save(readState()); form.hidden = !basket.children.length; }
+
+function updateBreakdown() {
+  let kcal = 0, p = 0, c = 0, f = 0, fibre = 0;
+  for (const li of basket.children) {
+    const grams = parseFloat(li.querySelector('input[name=grams]')?.value) || 0;
+    const factor = grams / 100.0;
+    const itemKcal = parseFloat(li.dataset.kcal);
+    const itemP = parseFloat(li.dataset.protein);
+    const itemC = parseFloat(li.dataset.carbs);
+    const itemF = parseFloat(li.dataset.fat);
+    const itemFibre = parseFloat(li.dataset.fibre);
+
+    if (!isNaN(itemKcal)) kcal += itemKcal * factor;
+    if (!isNaN(itemP)) p += itemP * factor;
+    if (!isNaN(itemC)) c += itemC * factor;
+    if (!isNaN(itemF)) f += itemF * factor;
+    if (!isNaN(itemFibre)) fibre += itemFibre * factor;
+  }
+
+  document.getElementById('sum-kcal').textContent = Math.round(kcal);
+  document.getElementById('sum-p').textContent = (Math.round(p * 10) / 10).toFixed(1);
+  document.getElementById('sum-c').textContent = (Math.round(c * 10) / 10).toFixed(1);
+  document.getElementById('sum-f').textContent = (Math.round(f * 10) / 10).toFixed(1);
+  document.getElementById('sum-fibre').textContent = (Math.round(fibre * 10) / 10).toFixed(1);
+
+  const calP = p * 4;
+  const calC = c * 4;
+  const calF = f * 9;
+  const macroCalSum = calP + calC + calF;
+
+  const pctP = macroCalSum ? Math.round((calP / macroCalSum) * 100) : 0;
+  const pctC = macroCalSum ? Math.round((calC / macroCalSum) * 100) : 0;
+  const pctF = macroCalSum ? Math.max(0, 100 - pctP - pctC) : 0;
+
+  document.getElementById('sum-bar-p').style.width = pctP + '%';
+  document.getElementById('sum-bar-c').style.width = pctC + '%';
+  document.getElementById('sum-bar-f').style.width = pctF + '%';
+
+  document.getElementById('sum-pct-p').textContent = `(${pctP}%)`;
+  document.getElementById('sum-pct-c').textContent = `(${pctC}%)`;
+  document.getElementById('sum-pct-f').textContent = `(${pctF}%)`;
+}
+
+function persist() {
+  save(readState());
+  form.hidden = !basket.children.length;
+  updateBreakdown();
+}
 
 function addRow(f) {
   const li = document.createElement('li');
-  Object.assign(li.dataset, {id: f.id, name: f.name, serving: f.serving || '', servingDesc: f.servingDesc || ''});
+  Object.assign(li.dataset, {
+    id: f.id,
+    name: f.name,
+    serving: f.serving || '',
+    servingDesc: f.servingDesc || '',
+    kcal: f.kcal ?? '',
+    protein: f.protein ?? '',
+    carbs: f.carbs ?? '',
+    fat: f.fat ?? '',
+    fibre: f.fibre ?? '',
+  });
   const hasServing = !!f.serving;
   const count = f.count !== undefined ? f.count : 1;
   const grams = f.grams !== undefined ? f.grams : (f.serving || '');
@@ -112,7 +190,17 @@ q.addEventListener('keydown', e => {
 });
 results.addEventListener('click', e => {
   const b = e.target.closest('.pick'); if (!b) return;
-  const li = addRow({id: b.dataset.id, name: b.dataset.name, serving: b.dataset.serving, servingDesc: b.dataset.servingDesc});
+  const li = addRow({
+    id: b.dataset.id,
+    name: b.dataset.name,
+    serving: b.dataset.serving,
+    servingDesc: b.dataset.servingDesc,
+    kcal: b.dataset.kcal,
+    protein: b.dataset.protein,
+    carbs: b.dataset.carbs,
+    fat: b.dataset.fat,
+    fibre: b.dataset.fibre,
+  });
   persist();
   results.innerHTML = ''; q.value = '';
   li.querySelector('.count, input[name=grams]').select();

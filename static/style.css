@@ -10,7 +10,7 @@
 * { box-sizing: border-box; }
 html { font-size: 17px; }
 body {
-  margin: 0; background: var(--paper); color: var(--ink);
+  margin: 0 background: var(--paper); color: var(--ink);
   font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif; line-height: 1.45;
 }
 main { max-width: 42rem; margin: 0 auto; padding: 1rem 1rem 4rem; }
@@ -85,6 +85,22 @@ button:disabled { opacity: 0.6; cursor: wait; }
 .basket input[name=grams] { width: 5.5rem; }
 .mealhead { font-size: 1rem; margin: 1.2rem 0 0.2rem; text-transform: capitalize; }
 .mealhead .fmeta { display: inline; font-weight: 400; text-transform: none; margin-left: 0.5rem; }
+
+/* basket live breakdown */
+.basket-summary { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 0.75rem 0.85rem; margin: 0.6rem 0 0.8rem; }
+.summary-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.45rem; }
+.summary-title { font-weight: 600; font-size: 0.9rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.summary-kcal { font-size: 1.15rem; color: var(--leaf); }
+.summary-kcal strong { font-weight: 700; }
+.basket-bar { height: 10px; margin-bottom: 0.55rem; }
+.summary-macros { display: flex; flex-wrap: wrap; gap: 0.35rem 0.75rem; font-size: 0.85rem; }
+.macro-pill { color: var(--muted); }
+.macro-pill strong { color: var(--ink); }
+.macro-pill em { font-style: normal; color: var(--muted); font-size: 0.78rem; }
+.macro-pill.p strong { color: var(--leaf); }
+.macro-pill.c strong { color: #b7831f; }
+.macro-pill.f strong { color: #7a5c99; }
+.macro-pill.fibre strong { color: #35766e; }
 
 /* report */
 .macrobar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--line); }
