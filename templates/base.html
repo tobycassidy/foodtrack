@@ -8,13 +8,47 @@
 </head>
 <body>
 <nav class="topnav">
-  <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Log</a>
-  <a href="/report" {% if request.url.path == '/report' %}aria-current="page"{% endif %}>Report</a>
-  <a href="/foods" {% if request.url.path == '/foods' %}aria-current="page"{% endif %}>Foods</a>
-  <a href="/foods/new" class="add" {% if request.url.path == '/foods/new' %}aria-current="page"{% endif %}>Add food</a>
+  <a href="/" {% if request is defined and request.url.path == '/' %}aria-current="page"{% endif %}>Log</a>
+  <a href="/report" {% if request is defined and request.url.path == '/report' %}aria-current="page"{% endif %}>Report</a>
+  <a href="/foods" {% if request is defined and request.url.path == '/foods' %}aria-current="page"{% endif %}>Foods</a>
+  <a href="/foods/new" class="add" {% if request is defined and request.url.path == '/foods/new' %}aria-current="page"{% endif %}>Add food</a>
 </nav>
 <main>
 {% block content %}{% endblock %}
 </main>
+
+<dialog id="summary-dialog" style="max-width: 600px; padding: 20px; border-radius: 8px; border: 1px solid #ccc;">
+  <h3 style="margin-top: 0;">Nutritional Summary</h3>
+  <div id="summary-content" style="white-space: pre-wrap; line-height: 1.5; margin-bottom: 20px;">Loading...</div>
+  <form method="dialog">
+    <button class="primary">Close</button>
+  </form>
+</dialog>
+
+<script>
+async function getSummary(scope, day = null, meal = null, basket = null) {
+  const dialog = document.getElementById('summary-dialog');
+  const content = document.getElementById('summary-content');
+  content.textContent = 'Loading summary...';
+  dialog.showModal();
+
+  const payload = { scope, day, meal };
+  if (scope === 'basket' && basket) {
+    payload.basket = basket;
+  }
+
+  try {
+    const res = await fetch('/summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    content.textContent = data.summary;
+  } catch (err) {
+    content.textContent = 'Failed to load summary: ' + err.message;
+  }
+}
+</script>
 </body>
 </html>

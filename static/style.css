@@ -10,7 +10,7 @@
 * { box-sizing: border-box; }
 html { font-size: 17px; }
 body {
-  margin: 0 background: var(--paper); color: var(--ink);
+  margin: 0; background: var(--paper); color: var(--ink);
   font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif; line-height: 1.45;
 }
 main { max-width: 42rem; margin: 0 auto; padding: 1rem 1rem 4rem; }
@@ -41,8 +41,8 @@ button.primary { background: var(--leaf); color: #fff; border-color: var(--leaf)
 button.quiet { border: none; background: none; color: var(--muted); padding: 0.2rem 0.5rem; font-size: 1.2rem; line-height: 1; }
 button:disabled { opacity: 0.6; cursor: wait; }
 
-#q { font-size: 1.1rem; }
-.results { list-style: none; margin: 0.3rem 0 0; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: #fff; overflow: hidden; }
+#q { font-size: 1.1rem; margin-bottom: 0.25rem; }
+.results { list-style: none; margin: 0.3rem 0 0.75rem; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: #fff; overflow: hidden; }
 .results li + li { border-top: 1px solid var(--line); }
 .pick { display: block; width: 100%; text-align: left; border: none; border-radius: 0; padding: 0.6rem 0.8rem; }
 .pick:hover, .pick:focus { background: var(--leaf-soft); }
@@ -74,9 +74,10 @@ button:disabled { opacity: 0.6; cursor: wait; }
 .extra { margin-bottom: 0.5rem; }
 
 /* meals */
-.mealpick { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.7rem; }
+#mealform { margin-top: 1.25rem; }
+.mealpick { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem; margin-bottom: 0.9rem; }
 .chip input { position: absolute; opacity: 0; }
-.chip span { display: inline-block; padding: 0.3rem 0.7rem; border: 1px solid var(--line); border-radius: 999px; background: #fff; font-size: 0.9rem; color: var(--ink); }
+.chip span { display: inline-block; padding: 0.35rem 0.75rem; border: 1px solid var(--line); border-radius: 999px; background: #fff; font-size: 0.9rem; color: var(--ink); }
 .chip input:checked + span { background: var(--leaf); color: #fff; border-color: var(--leaf); }
 .chip input:focus-visible + span { outline: 2px solid var(--leaf); }
 .basket { list-style: none; padding: 0; margin: 0 0 0.7rem; }

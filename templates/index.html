@@ -35,6 +35,7 @@
     <label>Note <input type="text" name="note" placeholder="optional, e.g. pre-run"></label>
     <button type="submit" class="primary">Save meal</button>
     <button type="button" id="clear-basket" class="quiet linkish">Clear basket</button>
+    <button type="button" class="quiet linkish" onclick="getSummary('basket', null, null, readState().items)">Get Summary</button>
   </form>
 </section>
 
@@ -50,10 +51,17 @@
     <tr>{% for col, label, unit in NUTRIENTS %}<th>{{ label }}</th>{% endfor %}</tr>
     <tr>{% for col, label, unit in NUTRIENTS %}<td>{{ totals[col]|round(1) }}{% if unit != 'kcal' %} {{ unit }}{% endif %}</td>{% endfor %}</tr>
   </table>
-  <p class="foot"><a href="/report?day={{ day.isoformat() }}">Full report for this day</a></p>
+  <p class="foot">
+    <a href="/report?day={{ day.isoformat() }}">Full report for this day</a>
+    · <button type="button" class="quiet linkish" onclick="getSummary('daily', '{{ day.isoformat() }}')">Get Summary</button>
+  </p>
 
   {% for meal in MEALS if meal in totals.meals %}
-  <h3 class="mealhead">{{ meal }} <span class="fmeta">{{ totals.meals[meal].kcal|round|int }} kcal · {{ totals.meals[meal].protein_g|round(1) }} g protein · {{ totals.meals[meal].fibre_g|round(1) }} g fibre</span></h3>
+  <h3 class="mealhead">
+    {{ meal }} 
+    <span class="fmeta">{{ totals.meals[meal].kcal|round|int }} kcal · {{ totals.meals[meal].protein_g|round(1) }} g protein · {{ totals.meals[meal].fibre_g|round(1) }} g fibre</span>
+    <button type="button" class="quiet linkish" style="font-size: 0.8em; margin-left: 8px;" onclick="getSummary('meal', '{{ day.isoformat() }}', '{{ meal }}')">Get Summary</button>
+  </h3>
   <ul class="entries">
   {% for e in entries if e.meal == meal %}
     <li>

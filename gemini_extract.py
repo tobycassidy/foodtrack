@@ -203,6 +203,25 @@ def _generate_with_fallback(client, contents, config):
     raise last_error
 
 
+def summarize_nutrition(data: dict) -> str:
+    """Ask Gemini to critique the scaled nutritional totals for a meal/day/basket."""
+    from google import genai
+    from google.genai import types
+    
+    prompt = f"""You are a sports nutritionist and microbiome expert.
+Analyze the following scaled nutritional totals for a {data.get('scope', 'collection of foods')}.
+The data has already been scaled to the exact portion weights consumed.
+Keep your response to 2-3 short paragraphs focusing on macros, leucine, fast/slow carbs, gut feeds, and overall quality.
+
+Data:
+{json.dumps(data, indent=2)}
+"""
+    client = genai.Client(http_options=types.HttpOptions(timeout=TIMEOUT_MS))
+    config = types.GenerateContentConfig(response_mime_type="text/plain")
+    response, _ = _generate_with_fallback(client, [prompt], config)
+    return response.text
+
+
 if __name__ == "__main__":
     # Label:      python gemini_extract.py path/to/label.jpg "porridge oats"
     # Name only:  python gemini_extract.py --name "whole eggs"
