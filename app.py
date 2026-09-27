@@ -16,7 +16,7 @@ from fastapi.templating import Jinja2Templates
 
 import db
 import nutrients as N
-from gemini_extract import extract_label
+from gemini_extract import extract_label, summarize_nutrition
 
 BASE = Path(__file__).parent
 app = FastAPI(title="FoodTrack")
@@ -120,6 +120,56 @@ async def log(request: Request):
     if items:
         db.add_logs(items, meal, note, logged_at)
     return RedirectResponse(f"/?day={day}" if day else "/", status_code=303)
+
+
+@app.post("/summary")
+async def summary(request: Request):
+    """Generate a Gemini summary for a specific scope (daily, meal, or basket)."""
+    data = await request.json()
+    scope = data.get("scope")
+    day = data.get("day")
+    meal = data.get("meal")
+    basket = data.get("basket", [])
+
+    agg = {"scope": scope, "foods": []}
+    for c in db.NUTRIENT_COLS:
+        agg[c] = 0.0
+    agg["extra"] = {}
+
+    if scope in ("daily", "meal") and day:
+        d = date.fromisoformat(day)
+        entries, totals = db.day_log(d)
+        if scope == "daily":
+            for c in db.NUTRIENT_COLS:
+                agg[c] = totals.get(c, 0.0)
+            agg["extra"] = totals.get("extra", {})
+            agg["foods"] = [e["name"] for e in entries]
+        else:
+            mtotals = totals["meals"].get(meal, db._empty_totals())
+            for c in db.NUTRIENT_COLS:
+                agg[c] = mtotals.get(c, 0.0)
+            agg["extra"] = mtotals.get("extra", {})
+            agg["foods"] = [e["name"] for e in entries if e["meal"] == meal]
+    elif scope == "basket":
+        for item in basket:
+            food = db.get_food(int(item["id"]))
+            if not food:
+                continue
+            grams = float(item["grams"] or 0)
+            factor = grams / 100.0
+            agg["foods"].append(food["name"])
+            for c in db.NUTRIENT_COLS:
+                if food.get(c) is not None:
+                    agg[c] += food[c] * factor
+            for k, v in food.get("extra", {}).items():
+                if isinstance(v, (int, float)):
+                    agg["extra"][k] = agg["extra"].get(k, 0.0) + v * factor
+
+    try:
+        text = summarize_nutrition(agg)
+    except Exception as e:
+        text = f"Error generating summary: {e}"
+    return {"summary": text}
 
 
 @app.get("/report", response_class=HTMLResponse)
