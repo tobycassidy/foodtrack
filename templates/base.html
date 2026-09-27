@@ -8,10 +8,10 @@
 </head>
 <body>
 <nav class="topnav">
-  <a href="/" {% if request and request.url.path == '/' %}aria-current="page"{% endif %}>Log</a>
-  <a href="/report" {% if request and request.url.path == '/report' %}aria-current="page"{% endif %}>Report</a>
-  <a href="/foods" {% if request and request.url.path == '/foods' %}aria-current="page"{% endif %}>Foods</a>
-  <a href="/foods/new" class="add" {% if request and request.url.path == '/foods/new' %}aria-current="page"{% endif %}>Add food</a>
+  <a href="/" {% if request is defined and request.url.path == '/' %}aria-current="page"{% endif %}>Log</a>
+  <a href="/report" {% if request is defined and request.url.path == '/report' %}aria-current="page"{% endif %}>Report</a>
+  <a href="/foods" {% if request is defined and request.url.path == '/foods' %}aria-current="page"{% endif %}>Foods</a>
+  <a href="/foods/new" class="add" {% if request is defined and request.url.path == '/foods/new' %}aria-current="page"{% endif %}>Add food</a>
 </nav>
 <main>
 {% block content %}{% endblock %}
