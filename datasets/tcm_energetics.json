@@ -10,7 +10,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "stomach"
+      ],
       "note": "tonifies spleen and stomach qi, strengthens sinews and bones",
       "source": "reference-table",
       "confidence": "medium",
@@ -20,12 +23,18 @@
       "id": 21,
       "name": "Asia wok-mix",
       "brand": "Bio-Inside",
-      "tcm_thermal": null,
-      "flavours": [],
-      "organs": [],
-      "note": null,
-      "source": null,
-      "confidence": null
+      "tcm_thermal": -1.0,
+      "flavours": [
+        "sweet",
+        "pungent"
+      ],
+      "organs": [
+        "spleen",
+        "stomach"
+      ],
+      "note": "mixed stir-fry vegetables (sprouts, bamboo shoot, carrot, cabbage) lean cool raw; wok-frying with ginger/garlic brings it towards neutral",
+      "source": "manual",
+      "confidence": "low"
     },
     {
       "id": 15,
@@ -35,7 +44,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "lung",
+        "large intestine"
+      ],
       "note": "clears heat, moistens the intestines",
       "source": "reference-table",
       "confidence": "medium",
@@ -49,7 +61,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "kidney"
+      ],
       "note": "tonifies the spleen and kidney, drains damp",
       "source": "reference-table",
       "confidence": "medium",
@@ -63,7 +78,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "kidney"
+      ],
       "note": "tonifies the spleen and kidney, drains damp",
       "source": "reference-table",
       "confidence": "medium",
@@ -78,7 +96,11 @@
         "sweet",
         "bitter"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "stomach",
+        "liver"
+      ],
       "note": "clears heat, brightens the eyes",
       "source": "reference-table",
       "confidence": "medium",
@@ -88,12 +110,17 @@
       "id": 6,
       "name": "Chana Dal",
       "brand": "Laila",
-      "tcm_thermal": null,
-      "flavours": [],
-      "organs": [],
-      "note": null,
-      "source": null,
-      "confidence": null
+      "tcm_thermal": 0.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [
+        "spleen",
+        "stomach"
+      ],
+      "note": "split chickpea: strengthens the spleen, drains damp, tonifies qi",
+      "source": "manual",
+      "confidence": "medium"
     },
     {
       "id": 7,
@@ -103,7 +130,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "stomach"
+      ],
       "note": "tonifies qi and blood, warms the middle",
       "source": "reference-table",
       "confidence": "medium",
@@ -113,12 +143,18 @@
       "id": 18,
       "name": "Guinness 0%",
       "brand": "Guinness",
-      "tcm_thermal": null,
-      "flavours": [],
-      "organs": [],
-      "note": null,
-      "source": null,
-      "confidence": null
+      "tcm_thermal": -1.0,
+      "flavours": [
+        "bitter",
+        "sweet"
+      ],
+      "organs": [
+        "stomach",
+        "bladder"
+      ],
+      "note": "beer is classed cool and bitter; without alcohol none of the warming, so cooling and damp-forming",
+      "source": "manual",
+      "confidence": "low"
     },
     {
       "id": 2,
@@ -128,7 +164,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "stomach"
+      ],
       "note": "tonifies qi, strengthens the spleen",
       "source": "reference-table",
       "confidence": "medium",
@@ -142,7 +181,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "kidney"
+      ],
       "note": "tonifies the spleen and kidney, drains damp",
       "source": "reference-table",
       "confidence": "medium",
@@ -156,7 +198,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "kidney"
+      ],
       "note": "tonifies the spleen and kidney, drains damp",
       "source": "reference-table",
       "confidence": "medium",
@@ -170,7 +215,11 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "lung",
+        "liver"
+      ],
       "note": "strengthens the spleen, brightens the eyes",
       "source": "reference-table",
       "confidence": "medium",
@@ -184,7 +233,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "stomach",
+        "lung"
+      ],
       "note": "tonifies qi, resolves phlegm",
       "source": "reference-table",
       "confidence": "medium",
@@ -198,7 +250,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "large intestine",
+        "kidney"
+      ],
       "note": "moistens the intestines, nourishes",
       "source": "reference-table",
       "confidence": "medium",
@@ -212,7 +267,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "stomach"
+      ],
       "note": "tonifies qi, strengthens the spleen",
       "source": "reference-table",
       "confidence": "medium",
@@ -227,7 +285,10 @@
         "sweet",
         "sour"
       ],
-      "organs": [],
+      "organs": [
+        "stomach",
+        "bladder"
+      ],
       "note": "clears heat, promotes urination",
       "source": "reference-table",
       "confidence": "medium",
@@ -242,7 +303,10 @@
         "sweet",
         "sour"
       ],
-      "organs": [],
+      "organs": [
+        "stomach",
+        "lung"
+      ],
       "note": "generates fluids, stops thirst",
       "source": "reference-table",
       "confidence": "medium",
@@ -256,7 +320,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "heart",
+        "stomach"
+      ],
       "note": "clears heat and toxins, drains damp",
       "source": "reference-table",
       "confidence": "medium",
@@ -270,7 +337,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "kidney"
+      ],
       "note": "tonifies qi and kidney, warms",
       "source": "reference-table",
       "confidence": "medium",
@@ -280,12 +350,18 @@
       "id": 31,
       "name": "Organic Psyllium Husk",
       "brand": "Just Natural",
-      "tcm_thermal": null,
-      "flavours": [],
-      "organs": [],
-      "note": null,
-      "source": null,
-      "confidence": null
+      "tcm_thermal": -0.5,
+      "flavours": [
+        "sweet",
+        "bland"
+      ],
+      "organs": [
+        "large intestine",
+        "lung"
+      ],
+      "note": "moistens and lubricates the intestines, bulks stool, mildly clears heat",
+      "source": "manual",
+      "confidence": "medium"
     },
     {
       "id": 22,
@@ -295,7 +371,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "kidney"
+      ],
       "note": "tonifies the spleen and kidney, drains damp",
       "source": "reference-table",
       "confidence": "medium",
@@ -309,7 +388,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "stomach"
+      ],
       "note": "tonifies the spleen and stomach qi",
       "source": "reference-table",
       "confidence": "medium",
@@ -324,7 +406,10 @@
         "sweet",
         "sour"
       ],
-      "organs": [],
+      "organs": [
+        "lung",
+        "spleen"
+      ],
       "note": "moistens the lung, generates fluids",
       "source": "reference-table",
       "confidence": "medium",
@@ -338,7 +423,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "stomach"
+      ],
       "note": "harmonises the middle, drains damp",
       "source": "reference-table",
       "confidence": "medium",
@@ -352,7 +440,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "stomach"
+      ],
       "note": "harmonises the middle, drains damp",
       "source": "reference-table",
       "confidence": "medium",
@@ -366,7 +457,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "stomach"
+      ],
       "note": "strengthens the spleen, tonifies qi",
       "source": "reference-table",
       "confidence": "medium",
@@ -376,23 +470,36 @@
       "id": 13,
       "name": "Sauerkraut",
       "brand": null,
-      "tcm_thermal": null,
-      "flavours": [],
-      "organs": [],
-      "note": null,
-      "source": null,
-      "confidence": null
+      "tcm_thermal": -1.0,
+      "flavours": [
+        "sour",
+        "salty"
+      ],
+      "organs": [
+        "stomach",
+        "large intestine",
+        "liver"
+      ],
+      "note": "fermented raw cabbage: cooling, sour and astringent; aids digestion, moves stagnation, clears damp-heat",
+      "source": "manual",
+      "confidence": "medium"
     },
     {
       "id": 25,
       "name": "Shirataki Udon",
       "brand": "Nashi Foods",
-      "tcm_thermal": null,
-      "flavours": [],
-      "organs": [],
-      "note": null,
-      "source": null,
-      "confidence": null
+      "tcm_thermal": -1.5,
+      "flavours": [
+        "pungent",
+        "bland"
+      ],
+      "organs": [
+        "lung",
+        "large intestine"
+      ],
+      "note": "konjac (mo yu) is classed cold in the materia medica: resolves phlegm, detoxifies, moves the bowels; nearly inert nutritionally",
+      "source": "manual",
+      "confidence": "medium"
     },
     {
       "id": 27,
@@ -402,7 +509,11 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "stomach",
+        "large intestine",
+        "kidney"
+      ],
       "note": "harmonises the stomach, benefits the kidney",
       "source": "reference-table",
       "confidence": "medium",
@@ -416,7 +527,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "stomach"
+      ],
       "note": "tonifies qi, warms the middle mildly",
       "source": "reference-table",
       "confidence": "medium",
@@ -430,7 +544,10 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "stomach"
+      ],
       "note": "tonifies qi and blood, warms the middle",
       "source": "reference-table",
       "confidence": "medium",
@@ -444,7 +561,12 @@
       "flavours": [
         "sweet"
       ],
-      "organs": [],
+      "organs": [
+        "spleen",
+        "stomach",
+        "heart",
+        "kidney"
+      ],
       "note": "nourishes yin and blood, calms the spirit",
       "source": "reference-table",
       "confidence": "medium",
