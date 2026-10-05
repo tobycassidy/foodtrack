@@ -1,0 +1,454 @@
+{
+  "scale": "-2 cold, -1 cool, 0 neutral, +1 warm, +2 hot (half steps allowed)",
+  "exported_at": "2026-10-05T14:25:04",
+  "foods": [
+    {
+      "id": 10,
+      "name": "90/10 Beef Mince",
+      "brand": null,
+      "tcm_thermal": 0.5,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "tonifies spleen and stomach qi, strengthens sinews and bones",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "beef"
+    },
+    {
+      "id": 21,
+      "name": "Asia wok-mix",
+      "brand": "Bio-Inside",
+      "tcm_thermal": null,
+      "flavours": [],
+      "organs": [],
+      "note": null,
+      "source": null,
+      "confidence": null
+    },
+    {
+      "id": 15,
+      "name": "Banana",
+      "brand": null,
+      "tcm_thermal": -2.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "clears heat, moistens the intestines",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "banana"
+    },
+    {
+      "id": 14,
+      "name": "Black beans (cooked)",
+      "brand": "Queen",
+      "tcm_thermal": 0.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "tonifies the spleen and kidney, drains damp",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "black bean"
+    },
+    {
+      "id": 28,
+      "name": "Black Beans (uncooked)",
+      "brand": null,
+      "tcm_thermal": 0.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "tonifies the spleen and kidney, drains damp",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "black bean"
+    },
+    {
+      "id": 17,
+      "name": "Broccoli",
+      "brand": null,
+      "tcm_thermal": -1.0,
+      "flavours": [
+        "sweet",
+        "bitter"
+      ],
+      "organs": [],
+      "note": "clears heat, brightens the eyes",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "broccoli"
+    },
+    {
+      "id": 6,
+      "name": "Chana Dal",
+      "brand": "Laila",
+      "tcm_thermal": null,
+      "flavours": [],
+      "organs": [],
+      "note": null,
+      "source": null,
+      "confidence": null
+    },
+    {
+      "id": 7,
+      "name": "Chicken drumstick",
+      "brand": null,
+      "tcm_thermal": 1.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "tonifies qi and blood, warms the middle",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "chicken"
+    },
+    {
+      "id": 18,
+      "name": "Guinness 0%",
+      "brand": "Guinness",
+      "tcm_thermal": null,
+      "flavours": [],
+      "organs": [],
+      "note": null,
+      "source": null,
+      "confidence": null
+    },
+    {
+      "id": 2,
+      "name": "Oatbran",
+      "brand": "Mornflake",
+      "tcm_thermal": 0.5,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "tonifies qi, strengthens the spleen",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "oat"
+    },
+    {
+      "id": 16,
+      "name": "Organic Butter Beans",
+      "brand": "Planet Organic",
+      "tcm_thermal": 0.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "tonifies the spleen and kidney, drains damp",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "butter bean"
+    },
+    {
+      "id": 23,
+      "name": "Organic Cannellini Beans",
+      "brand": null,
+      "tcm_thermal": 0.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "tonifies the spleen and kidney, drains damp",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "cannellini"
+    },
+    {
+      "id": 33,
+      "name": "Organic Carrots",
+      "brand": "RB Organic",
+      "tcm_thermal": 0.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "strengthens the spleen, brightens the eyes",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "carrot"
+    },
+    {
+      "id": 12,
+      "name": "Organic Chestnut Mushroom",
+      "brand": "McArdle Mushrooms",
+      "tcm_thermal": -1.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "tonifies qi, resolves phlegm",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "mushroom"
+    },
+    {
+      "id": 32,
+      "name": "Organic Chia Seeds",
+      "brand": null,
+      "tcm_thermal": 0.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "moistens the intestines, nourishes",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "chia"
+    },
+    {
+      "id": 11,
+      "name": "Organic Gluten Free Jumbo Oats",
+      "brand": null,
+      "tcm_thermal": 0.5,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "tonifies qi, strengthens the spleen",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "oat"
+    },
+    {
+      "id": 24,
+      "name": "Organic Kiwi",
+      "brand": "Sainsbury's So Organic",
+      "tcm_thermal": -2.0,
+      "flavours": [
+        "sweet",
+        "sour"
+      ],
+      "organs": [],
+      "note": "clears heat, promotes urination",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "kiwi"
+    },
+    {
+      "id": 29,
+      "name": "Organic Mangoes",
+      "brand": "PACKCO",
+      "tcm_thermal": -1.0,
+      "flavours": [
+        "sweet",
+        "sour"
+      ],
+      "organs": [],
+      "note": "generates fluids, stops thirst",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "mango"
+    },
+    {
+      "id": 20,
+      "name": "Organic Mung Beans",
+      "brand": null,
+      "tcm_thermal": -2.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "clears heat and toxins, drains damp",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "mung bean"
+    },
+    {
+      "id": 5,
+      "name": "Organic Pistachios",
+      "brand": null,
+      "tcm_thermal": 1.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "tonifies qi and kidney, warms",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "pistachio"
+    },
+    {
+      "id": 31,
+      "name": "Organic Psyllium Husk",
+      "brand": "Just Natural",
+      "tcm_thermal": null,
+      "flavours": [],
+      "organs": [],
+      "note": null,
+      "source": null,
+      "confidence": null
+    },
+    {
+      "id": 22,
+      "name": "Organic Red Kidney Beans",
+      "brand": "Planet Organic",
+      "tcm_thermal": 0.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "tonifies the spleen and kidney, drains damp",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "kidney bean"
+    },
+    {
+      "id": 30,
+      "name": "Organic Short Grain Brown Rice",
+      "brand": "Planet Organic",
+      "tcm_thermal": 0.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "tonifies the spleen and stomach qi",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "rice"
+    },
+    {
+      "id": 26,
+      "name": "Organic Strawberries",
+      "brand": "PACK'D",
+      "tcm_thermal": -1.0,
+      "flavours": [
+        "sweet",
+        "sour"
+      ],
+      "organs": [],
+      "note": "moistens the lung, generates fluids",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "strawberr"
+    },
+    {
+      "id": 1,
+      "name": "Organic Yellow Split Peas",
+      "brand": null,
+      "tcm_thermal": 0.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "harmonises the middle, drains damp",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "peas"
+    },
+    {
+      "id": 8,
+      "name": "Peas",
+      "brand": null,
+      "tcm_thermal": 0.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "harmonises the middle, drains damp",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "peas"
+    },
+    {
+      "id": 4,
+      "name": "Red Split Lentils (Cooked)",
+      "brand": "Waitrose",
+      "tcm_thermal": 0.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "strengthens the spleen, tonifies qi",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "lentil"
+    },
+    {
+      "id": 13,
+      "name": "Sauerkraut",
+      "brand": null,
+      "tcm_thermal": null,
+      "flavours": [],
+      "organs": [],
+      "note": null,
+      "source": null,
+      "confidence": null
+    },
+    {
+      "id": 25,
+      "name": "Shirataki Udon",
+      "brand": "Nashi Foods",
+      "tcm_thermal": null,
+      "flavours": [],
+      "organs": [],
+      "note": null,
+      "source": null,
+      "confidence": null
+    },
+    {
+      "id": 27,
+      "name": "Sweetheart Cabbage",
+      "brand": "Marks and Spencer",
+      "tcm_thermal": 0.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "harmonises the stomach, benefits the kidney",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "cabbage"
+    },
+    {
+      "id": 9,
+      "name": "Turkey neck",
+      "brand": null,
+      "tcm_thermal": 0.5,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "tonifies qi, warms the middle mildly",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "turkey"
+    },
+    {
+      "id": 19,
+      "name": "Whole Chicken Leg",
+      "brand": null,
+      "tcm_thermal": 1.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "tonifies qi and blood, warms the middle",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "chicken"
+    },
+    {
+      "id": 3,
+      "name": "Whole Eggs",
+      "brand": null,
+      "tcm_thermal": 0.0,
+      "flavours": [
+        "sweet"
+      ],
+      "organs": [],
+      "note": "nourishes yin and blood, calms the spirit",
+      "source": "reference-table",
+      "confidence": "medium",
+      "matched": "egg"
+    }
+  ]
+}
