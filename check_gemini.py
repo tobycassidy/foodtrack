@@ -145,6 +145,7 @@ def main():
     print(f"  from label: {label}")
     print(f"  estimated ({len(est)}): {est[:8]}{' …' if len(est) > 8 else ''}")
     print(f"  profile tags: {food['profile'].get('tags')}, feeds: {food['profile'].get('feeds')}")
+    print(f"  TCM thermal: {food.get('tcm_thermal')} {food.get('tcm')}")
     if food.get("notes"):
         print(f"  notes: {food['notes']}")
     if not image_path:

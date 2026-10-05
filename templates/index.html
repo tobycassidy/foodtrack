@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_tcm.html" import badge, gauge %}
 {% block content %}
 <section class="logger">
   <h1>Build a meal</h1>
@@ -29,6 +30,11 @@
         <span class="macro-pill f">Fat: <strong id="sum-f">0</strong>g <em id="sum-pct-f">(0%)</em></span>
         <span class="macro-pill fibre">Fibre: <strong id="sum-fibre">0</strong>g</span>
       </div>
+      <div class="tcm-block">
+        <div class="summary-head"><span class="summary-title">TCM energetics</span><span class="fmeta" id="tcm-coverage"></span></div>
+        <div id="basket-tcm"></div>
+        <p class="tcm-whatif fmeta" id="tcm-whatif"></p>
+      </div>
     </div>
 
     <p class="hint">Keep searching to add more items. Need something that isn't saved yet? Add it via the search results; your basket is kept while you do.</p>
@@ -51,23 +57,27 @@
     <tr>{% for col, label, unit in NUTRIENTS %}<th>{{ label }}</th>{% endfor %}</tr>
     <tr>{% for col, label, unit in NUTRIENTS %}<td>{{ totals[col]|round(1) }}{% if unit != 'kcal' %} {{ unit }}{% endif %}</td>{% endfor %}</tr>
   </table>
+  <div class="day-tcm">{{ gauge(totals.tcm_score, "sm") }}</div>
   <p class="foot">
     <a href="/report?day={{ day.isoformat() }}">Full report for this day</a>
     · <button type="button" class="quiet linkish" onclick="getSummary('daily', '{{ day.isoformat() }}')">Get Summary</button>
   </p>
 
   {% for meal in MEALS if meal in totals.meals %}
+  {% set ms = totals.meal_tcm[meal] %}
   <h3 class="mealhead">
-    {{ meal }} 
+    {{ meal }}
+    <span class="tcm-badge {{ ms.band }}" style="--tcm-c: {{ ms.colour }}" title="TCM thermal score{% if ms.known and ms.coverage < 100 %} ({{ ms.coverage }}% of meal assessed){% endif %}">{{ ms.text }} <small>{{ ms.label|lower }}</small></span>
     <span class="fmeta">{{ totals.meals[meal].kcal|round|int }} kcal · {{ totals.meals[meal].protein_g|round(1) }} g protein · {{ totals.meals[meal].fibre_g|round(1) }} g fibre</span>
     <button type="button" class="quiet linkish" style="font-size: 0.8em; margin-left: 8px;" onclick="getSummary('meal', '{{ day.isoformat() }}', '{{ meal }}')">Get Summary</button>
   </h3>
+  <div class="meal-gauge">{{ gauge(ms, "xs", False) }}</div>
   <ul class="entries">
   {% for e in entries if e.meal == meal %}
     <li>
       <div>
-        <span class="fname">{{ e.name }}</span>
-        <span class="fmeta">{{ e.grams|round(0)|int }} g · {{ e.scaled.kcal|round|int if e.scaled.kcal is not none else '?' }} kcal · {{ e.logged_at[11:16] }}{% if e.note %} · {{ e.note }}{% endif %}</span>
+        <span class="fname">{{ e.name }} {{ badge(e.tcm_thermal) }}</span>
+        <span class="fmeta"><button type="button" class="grams-edit" data-entry="{{ e.entry_id }}" data-grams="{{ e.grams|round(1) }}" title="Click to change the amount">{{ e.grams|round(0)|int }} g ✎</button> · {{ e.scaled.kcal|round|int if e.scaled.kcal is not none else '?' }} kcal · {{ e.logged_at[11:16] }}{% if e.note %} · {{ e.note }}{% endif %}</span>
       </div>
       <form method="post" action="/log/{{ e.entry_id }}/delete"><input type="hidden" name="day" value="{{ day.isoformat() }}"><button class="quiet" title="Remove">×</button></form>
     </li>
@@ -86,7 +96,8 @@
 const KEY = 'foodtrack.basket';
 const q = document.getElementById('q'), results = document.getElementById('results');
 const form = document.getElementById('mealform'), basket = document.getElementById('basket');
-const prefill = {{ ({"id": prefill.id, "name": prefill.name, "serving": prefill.serving_size_g or "", "servingDesc": prefill.serving_desc or "", "kcal": prefill.kcal if prefill.kcal is not none else "", "protein": prefill.protein_g if prefill.protein_g is not none else "", "carbs": prefill.carbs_g if prefill.carbs_g is not none else "", "fat": prefill.fat_g if prefill.fat_g is not none else "", "fibre": prefill.fibre_g if prefill.fibre_g is not none else ""} if prefill else None)|tojson }};
+const prefill = {{ ({"id": prefill.id, "name": prefill.name, "serving": prefill.serving_size_g or "", "servingDesc": prefill.serving_desc or "", "kcal": prefill.kcal if prefill.kcal is not none else "", "protein": prefill.protein_g if prefill.protein_g is not none else "", "carbs": prefill.carbs_g if prefill.carbs_g is not none else "", "fat": prefill.fat_g if prefill.fat_g is not none else "", "fibre": prefill.fibre_g if prefill.fibre_g is not none else "", "tcm": prefill.tcm_thermal if prefill.tcm_thermal is not none else ""} if prefill else None)|tojson }};
+const TCM = {{ tcm_cfg|tojson }};
 
 function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {meal: null, items: []}; } catch { return {meal: null, items: []}; } }
 function save(state) { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
@@ -94,7 +105,7 @@ function readState() {
   const items = [...basket.children].map(li => ({
     id: li.dataset.id, name: li.dataset.name, serving: li.dataset.serving, servingDesc: li.dataset.servingDesc,
     kcal: li.dataset.kcal || '', protein: li.dataset.protein || '', carbs: li.dataset.carbs || '',
-    fat: li.dataset.fat || '', fibre: li.dataset.fibre || '',
+    fat: li.dataset.fat || '', fibre: li.dataset.fibre || '', tcm: li.dataset.tcm || '',
     count: li.querySelector('.count')?.value ?? '', grams: li.querySelector('input[name=grams]').value,
   }));
   const meal = form.querySelector('input[name=meal]:checked')?.value || null;
@@ -141,6 +152,65 @@ function updateBreakdown() {
   document.getElementById('sum-pct-p').textContent = `(${pctP}%)`;
   document.getElementById('sum-pct-c').textContent = `(${pctC}%)`;
   document.getElementById('sum-pct-f').textContent = `(${pctF}%)`;
+  renderTcm();
+}
+
+// ---- TCM energetics for the basket (mirrors tcm.py) ----
+function tcmBand(v) {
+  if (v === null || v === undefined || isNaN(v)) return {key: 'unknown', label: 'Not assessed', colour: '#c9c6bc'};
+  for (const [upper, key, label, colour] of TCM.bands) if (v <= upper) return {key, label, colour};
+  const last = TCM.bands[TCM.bands.length - 1]; return {key: last[1], label: last[2], colour: last[3]};
+}
+function tcmFmt(v) {
+  if (v === null || v === undefined || isNaN(v)) return '?';
+  const r = Math.round(v * 10) / 10; if (r === 0) return '0';
+  return (r > 0 ? '+' : '−') + Math.abs(r);
+}
+function tcmWeight(grams, kcal) {
+  if (TCM.weighting === 'kcal') return Math.max(kcal || 0, 0);
+  if (TCM.weighting === 'equal') return 1;
+  return Math.max(grams || 0, 0);
+}
+function tcmAccumulate() {
+  const tot = {weighted: 0, known: 0, total: 0, items: 0, itemsKnown: 0};
+  for (const li of basket.children) {
+    const grams = parseFloat(li.querySelector('input[name=grams]')?.value) || 0;
+    const kcalPer100 = parseFloat(li.dataset.kcal);
+    const kcal = isNaN(kcalPer100) ? null : kcalPer100 * grams / 100;
+    const thermal = li.dataset.tcm === '' ? NaN : parseFloat(li.dataset.tcm);
+    const w = tcmWeight(grams, kcal);
+    tot.total += w; tot.items += 1;
+    if (!isNaN(thermal)) { tot.weighted += thermal * w; tot.known += w; tot.itemsKnown += 1; }
+  }
+  return tot;
+}
+function tcmScore(tot) {
+  if (!tot.known) return {value: null, known: false, coverage: 0, ...tcmBand(null), text: '?', pct: 50};
+  const value = tot.weighted / tot.known;
+  const pct = (Math.max(TCM.min, Math.min(TCM.max, value)) - TCM.min) / (TCM.max - TCM.min) * 100;
+  return {value, known: true, coverage: tot.total ? Math.round(tot.known / tot.total * 100) : 100, ...tcmBand(value), text: tcmFmt(value), pct};
+}
+function renderTcm() {
+  const tot = tcmAccumulate(), sc = tcmScore(tot);
+  document.getElementById('basket-tcm').innerHTML = `
+    <div class="tcm-gauge md ${sc.key}" style="--tcm-c: ${sc.colour}">
+      <div class="tcm-track"><span class="tcm-marker" style="left: ${sc.pct.toFixed(1)}%"></span></div>
+      <div class="tcm-legend"><span>cold</span><span>cool</span><span>neutral</span><span>warm</span><span>hot</span></div>
+      <div class="tcm-readout"><strong>${sc.text}</strong> <span class="tcm-label">${sc.label}</span></div>
+    </div>`;
+  const cov = document.getElementById('tcm-coverage');
+  cov.textContent = !sc.known ? (tot.items ? 'no items assessed yet' : '')
+    : sc.coverage < 100 ? `${tot.itemsKnown}/${tot.items} items assessed (${sc.coverage}% by ${TCM.weighting})` : '';
+  // "What would it take?" – show where 100 g of a cold/cool/warm/hot item would move the meal.
+  const wi = document.getElementById('tcm-whatif');
+  if (!tot.items) { wi.textContent = ''; return; }
+  const w = tcmWeight(100, 150);
+  const after = t => tcmFmt((tot.weighted + t * w) / (tot.known + w));
+  wi.innerHTML = `Adding 100 g of a <b>−2</b> item → ${after(-2)}, <b>−1</b> → ${after(-1)}, <b>+1</b> → ${after(1)}, <b>+2</b> → ${after(2)}`;
+}
+function tcmBadgeHtml(v) {
+  const t = v === '' || v === undefined ? NaN : parseFloat(v), b = tcmBand(t);
+  return `<span class="tcm-badge ${b.key}" style="--tcm-c: ${b.colour}" title="TCM thermal nature: ${b.label}">${tcmFmt(t)}${isNaN(t) ? '' : ` <small>${b.label.toLowerCase()}</small>`}</span>`;
 }
 
 function persist() {
@@ -161,12 +231,13 @@ function addRow(f) {
     carbs: f.carbs ?? '',
     fat: f.fat ?? '',
     fibre: f.fibre ?? '',
+    tcm: f.tcm ?? '',
   });
   const hasServing = !!f.serving;
   const count = f.count !== undefined ? f.count : 1;
   const grams = f.grams !== undefined ? f.grams : (f.serving || '');
   li.innerHTML = `<input type="hidden" name="food_id" value="${f.id}">
-    <span class="fname">${f.name}<span class="fmeta">${f.servingDesc || ''}</span></span>
+    <span class="fname">${f.name} ${tcmBadgeHtml(f.tcm)}<span class="fmeta">${f.servingDesc || ''}</span></span>
     ${hasServing ? `<input type="number" class="count" step="any" min="0" inputmode="decimal" placeholder="×" value="${count}" title="Number of servings">` : ''}
     <input type="number" name="grams" step="any" min="0" inputmode="decimal" placeholder="g" required value="${grams}">
     <button type="button" class="quiet rm" title="Remove">×</button>`;
@@ -208,6 +279,7 @@ results.addEventListener('click', e => {
     carbs: b.dataset.carbs,
     fat: b.dataset.fat,
     fibre: b.dataset.fibre,
+    tcm: b.dataset.tcm,
   });
   persist();
   results.innerHTML = ''; q.value = '';
@@ -231,5 +303,31 @@ basket.addEventListener('input', e => {
 form.addEventListener('change', persist);
 form.addEventListener('submit', () => { try { localStorage.removeItem(KEY); } catch {} });
 document.getElementById('clear-basket').addEventListener('click', () => { basket.innerHTML = ''; persist(); });
+
+// Inline edit of a logged entry's grams: click the amount, type, Enter/blur to save, Esc to cancel.
+document.querySelectorAll('.grams-edit').forEach(btn => btn.addEventListener('click', () => {
+  if (btn.dataset.editing) return;
+  btn.dataset.editing = '1';
+  const input = document.createElement('input');
+  input.type = 'number'; input.step = 'any'; input.min = '0'; input.inputMode = 'decimal';
+  input.className = 'grams-inline'; input.value = btn.dataset.grams;
+  btn.replaceWith(input); input.focus(); input.select();
+  let done = false;
+  const cancel = () => { if (done) return; done = true; input.replaceWith(btn); delete btn.dataset.editing; };
+  const commit = async () => {
+    if (done) return;
+    const g = parseFloat(input.value);
+    if (!g || g <= 0 || g === parseFloat(btn.dataset.grams)) return cancel();
+    done = true; input.disabled = true;
+    try {
+      const r = await fetch(`/log/${btn.dataset.entry}/grams`, {method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({grams: g, day: '{{ day.isoformat() }}'})});
+      if (!r.ok) throw new Error(await r.text());
+      location.reload();   // totals, meal scores and the day gauge all come from the server
+    } catch (err) { alert('Could not save: ' + err.message); done = false; input.disabled = false; cancel(); }
+  };
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') cancel(); });
+  input.addEventListener('blur', commit);
+}));
 </script>
 {% endblock %}

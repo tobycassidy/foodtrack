@@ -16,6 +16,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 import nutrients as N
+import tcm as T
 
 MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
 # Tried in order if MODEL is overloaded (503) or rate-limited (429). Comma-separated to override.
@@ -61,6 +62,14 @@ class Profile(BaseModel):
     notable_compounds: list[str] = Field(default_factory=list, description="e.g. avenanthramides, lycopene, sulforaphane, quercetin")
 
 
+class TCM(BaseModel):
+    thermal: float | None = Field(default=None, description="Thermal nature in Traditional Chinese Medicine on a -2..+2 scale: -2 cold, -1 cool, 0 neutral, +1 warm, +2 hot; half steps allowed. For a composite product, judge the dominant ingredients and the processing (roasting, frying, drying and spices warm; raw and watery cool).")
+    flavours: list[str] = Field(default_factory=list, description="TCM flavours present, from: sweet, sour, bitter, pungent, salty, bland")
+    organs: list[str] = Field(default_factory=list, description="Organ/meridian affinities, e.g. spleen, stomach, lung, kidney, liver, heart")
+    note: str | None = Field(default=None, description="One sentence: the classical energetic action, e.g. 'clears heat and drains damp' or 'tonifies qi and warms the middle'")
+    confidence: Literal["high", "medium", "low"] = Field(default="medium", description="high for a single whole food with a well-known classification, low for a processed composite")
+
+
 class Extraction(BaseModel):
     name: str
     brand: str | None = None
@@ -78,6 +87,7 @@ class Extraction(BaseModel):
     label_extra: list[Nutrient] = Field(default_factory=list, description="Any other nutrient printed on the label (vitamins, minerals, polyols...)")
     estimates: list[Nutrient] = Field(default_factory=list, description="Estimated nutrients NOT printed on the label")
     profile: Profile
+    tcm: TCM
     notes: str | None = Field(default=None, description="Anything the user should double-check")
 
 
@@ -143,6 +153,16 @@ Fill the profile: estimated glycaemic index, fibre fermentability, NOVA processi
 present, which gut bacteria genera they preferentially feed, functional tags, notable bioactive compounds,
 and one-sentence notes on training/energy relevance and microbiome relevance.
 
+TASK 4 – TCM ENERGETICS
+Classify the food's thermal nature in Traditional Chinese Medicine dietetics (Chinese food therapy /
+yinyang of foods) on this scale: -2 cold, -1 cool, 0 neutral, +1 warm, +2 hot (half steps allowed).
+Use the standard classifications (e.g. mung bean, watermelon, cucumber, crab, banana: cold; most leafy
+greens, tofu, pear, barley, wheat: cool; rice, oats, eggs, pork, carrot, potato: neutral; chicken, onion,
+walnut, salmon, cherry: warm; chilli, black pepper, lamb, dried ginger, cinnamon: hot). For a processed or
+composite product, weigh the main ingredients and the processing: roasting, frying, drying and warming
+spices shift towards warm; raw, watery or chilled shifts towards cool. Add flavours, organ affinities, a
+one-sentence action and a confidence.
+
 Return JSON only, matching the schema. Use the typed name as the food name unless it is clearly wrong."""
 
 
@@ -163,7 +183,7 @@ def extract_label(image_bytes: bytes | None, mime_type: str | None, food_name: s
         response_mime_type="application/json", response_schema=Extraction)
     response, used_model = _generate_with_fallback(client, contents, config)
     parsed = Extraction.model_validate_json(response.text)
-    out = parsed.model_dump(exclude={"label_extra", "estimates", "profile"})
+    out = parsed.model_dump(exclude={"label_extra", "estimates", "profile", "tcm"})
     out["extra"], out["extra_meta"] = {}, {}
     label_source = "label" if has_image else "estimate"
     for n in parsed.label_extra:
@@ -175,6 +195,9 @@ def extract_label(image_bytes: bytes | None, mime_type: str | None, food_name: s
         out["extra"][n.key] = n.value
         out["extra_meta"][n.key] = {"source": "estimate", "confidence": n.confidence, "basis": n.basis}
     out["profile"] = parsed.profile.model_dump()
+    out["tcm_thermal"] = T.parse_thermal(parsed.tcm.thermal)
+    out["tcm"] = {k: v for k, v in parsed.tcm.model_dump(exclude={"thermal"}).items() if v}
+    out["tcm"]["source"] = "gemini-label" if has_image else "gemini-estimate"
     if used_model != MODEL:
         out["notes"] = f"(answered by fallback model {used_model}) " + (out.get("notes") or "")
     return out
@@ -212,6 +235,9 @@ def summarize_nutrition(data: dict) -> str:
 Analyze the following scaled nutritional totals for a {data.get('scope', 'collection of foods')}.
 The data has already been scaled to the exact portion weights consumed.
 Keep your response to 2-3 short paragraphs focusing on macros, leucine, fast/slow carbs, gut feeds, and overall quality.
+If a `tcm` block is present it is the meal's Traditional Chinese Medicine thermal score (-2 cold .. +2 hot,
+a weighted mean of the foods' thermal natures). Add one sentence on it: whether the meal leans warming or
+cooling and what kind of item would balance it.
 
 Data:
 {json.dumps(data, indent=2)}

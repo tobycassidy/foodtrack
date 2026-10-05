@@ -57,6 +57,54 @@ Extraction calls have a 90 s timeout (`GEMINI_TIMEOUT_S`), and photos are downsc
    ```
    Prints the full JSON. Edit `build_prompt()` in `gemini_extract.py` to steer it.
 
+## 4b. TCM energetics (warming / cooling)
+
+Every food carries a **thermal nature** on a five-point scale from Chinese dietary therapy:
+
+| value | nature  | examples |
+|------:|---------|----------|
+| −2 | cold    | mung bean, watermelon, cucumber, crab, banana |
+| −1 | cool    | leafy greens, tofu, pear, barley, wheat |
+|  0 | neutral | rice, oats, eggs, pork, carrot, potato |
+| +1 | warm    | chicken, onion, walnut, salmon, cherry, fresh ginger |
+| +2 | hot     | chilli, black pepper, lamb, dried ginger, cinnamon |
+
+Half steps (+0.5 "slightly warming") are allowed. The value lives in `foods.tcm_thermal`; flavours, organ
+affinities, a one-line action and where the value came from live in the `foods.tcm` JSON column. New foods
+get it automatically: Gemini fills it in during label extraction / name lookup (Task 4 of the prompt) and the
+review form shows it under **TCM energetics**, where you can change it (changing the number marks it `manual`).
+
+**Meal score.** A meal's score is the *weighted mean* of its items' thermal values, so it sits on the same
+−2…+2 scale as a food: 100 g of mung beans pulls a meal cooler than 50 g does. The weight is grams by default;
+set `TCM_WEIGHTING=kcal` in `.env` if you'd rather watery vegetables didn't dominate, or `equal` to count each
+item once. Items without a value are excluded from the mean and reported as coverage ("2/3 items assessed,
+78% by grams"). The basket shows the live score as you build a meal plus a *what-if* line ("adding 100 g of a
++1 item → −0.1") so you can pick the next item to balance it; each logged meal, the day, and the report show
+the same gauge. Logic is in `tcm.py` (Python) and mirrored in `index.html` (basket JS); bands and colours are
+defined once in `tcm.BANDS` and passed to the page.
+
+**Backfilling foods saved before this existed.** The dataset file `datasets/tcm_energetics.json` is the
+reviewable, git-tracked source of truth; the database is just where it gets loaded:
+
+```bash
+python dump_foods.py --tcm              # export/merge every food into datasets/tcm_energetics.json
+python tcm_backfill.py status           # what's missing in DB and dataset
+python tcm_backfill.py suggest          # fill blanks from the built-in table (tcm_reference.py)
+python tcm_backfill.py suggest --gemini # ask Gemini for whatever is still blank (needs GEMINI_API_KEY)
+git diff datasets/                      # review; edit any value you disagree with
+python tcm_backfill.py import --dry-run # then without --dry-run to write to the DB
+git add datasets && git commit -m "TCM energetics dataset"
+```
+
+`suggest` never touches the database. `import` only fills foods that have no value unless you pass
+`--overwrite`; it matches by id and falls back to name+brand, so the same file can be imported into a copied
+or rebuilt database (e.g. on the Pi). Re-run `dump_foods.py --tcm` whenever you've added foods: existing
+dataset values are kept, new foods are appended with blanks. `dump_foods.py --json foods.json` dumps the
+entire food table if you want all of it under version control.
+
+**Editing a logged portion.** On the Log page, tap the grams of any logged entry (e.g. "220 g ✎"), type the
+new amount, press Enter (Esc cancels). Totals and TCM scores recalculate on the server.
+
 ## 5. Put it in git
 
 You already use `~/Documents/repos`, so:
@@ -85,6 +133,7 @@ git push -u origin main
 - **Meal names**: `MEALS` in `db.py`.
 - **Core label columns**: `NUTRIENTS` in `db.py`. Adding one needs a row in `MIGRATIONS` too, so existing databases get the column.
 - **Extraction prompt / schema**: `gemini_extract.py`.
+- **TCM scale, bands, colours, weighting**: `tcm.py`; offline reference values for the backfill: `tcm_reference.py`.
 
 ## 7. Moving to a Raspberry Pi
 
