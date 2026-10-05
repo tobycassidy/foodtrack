@@ -62,18 +62,19 @@
   <label>Microbiome note <input type="text" name="profile_microbiome_note" value="{{ p.get('microbiome_note', '') }}"></label>
 
   <h2>TCM energetics</h2>
-  {% set t = food.tcm or {} %}
+  {% set t = food.get('tcm') or {} %}
   <p class="hint">Thermal nature on a cold→hot scale; this is what the meal score is built from.
     {% if t.source %}Current value came from <span class="src {{ 'estimate' if 'gemini' in t.source else 'manual' }}">{{ t.source }}{% if t.confidence %} · {{ t.confidence }}{% endif %}</span>; changing it marks it manual.{% endif %}</p>
   <input type="hidden" name="tcm_source" value="{{ t.source or '' }}">
   <input type="hidden" name="tcm_confidence" value="{{ t.confidence or '' }}">
-  <input type="hidden" name="tcm_prev" value="{{ food.tcm_thermal if food.tcm_thermal is not none else '' }}">
+  {% set cur = food.get('tcm_thermal') %}
+  <input type="hidden" name="tcm_prev" value="{{ cur if cur is not none else '' }}">
   <div class="grid">
     <label>Thermal nature
       <select name="tcm_thermal" id="tcm_thermal">
-        <option value="" {% if food.tcm_thermal is none %}selected{% endif %}>Not assessed</option>
+        <option value="" {% if cur is none %}selected{% endif %}>Not assessed</option>
         {% for val, label in T.THERMAL_CHOICES %}
-        <option value="{{ val }}" {% if food.tcm_thermal is not none and (food.tcm_thermal|float) == val %}selected{% endif %}>{{ label }}</option>
+        <option value="{{ val }}" {% if cur is not none and (cur|float) == val %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
     </label>

@@ -287,7 +287,7 @@ async def food_extract(request: Request, name: str = Form(""), photo: UploadFile
         food = extract_label(image_bytes, mime, name)
     except Exception as exc:  # show the error on the form rather than a 500
         error = f"Gemini extraction failed: {exc}"
-        food = {"name": name, "extra": {}, "extra_meta": {}, "profile": {}}
+        food = {"name": name, "extra": {}, "extra_meta": {}, "profile": {}, "tcm_thermal": None, "tcm": {}}
     if name and not food.get("name"):
         food["name"] = name
     food["label_image"] = filename
@@ -302,8 +302,8 @@ async def food_extract(request: Request, name: str = Form(""), photo: UploadFile
 @app.get("/foods/manual", response_class=HTMLResponse)
 def food_manual(request: Request, name: str = ""):
     return templates.TemplateResponse(request, "food_form.html", {
-        "food": {"name": name, "extra": {}, "extra_meta": {}, "profile": {}}, "food_id": None, "error": None,
-        "notes": None, "title": "Enter values by hand",
+        "food": {"name": name, "extra": {}, "extra_meta": {}, "profile": {}, "tcm_thermal": None, "tcm": {}},
+        "food_id": None, "error": None, "notes": None, "title": "Enter values by hand",
     })
 
 
