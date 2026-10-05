@@ -3,12 +3,17 @@
 All nutrient values on a food are stored PER 100 g, so any portion is a
 simple multiplication. Anything beyond the core nutrients lives in the
 `extra` JSON column, e.g. {"fibre_soluble_g": 1.2, "fibre_insoluble_g": 2.8}.
+
+TCM energetics: `tcm_thermal` is the warming/cooling value on a -2..+2 scale (see
+tcm.py); `tcm` is a JSON blob with flavours, organs, note, source and confidence.
 """
 import json
 import os
 import sqlite3
 from datetime import date
 from pathlib import Path
+
+import tcm as T
 
 DATA_DIR = Path(os.environ.get("FOODTRACK_DATA", "./data"))
 DB_PATH = DATA_DIR / "food.db"
@@ -39,6 +44,8 @@ CREATE TABLE IF NOT EXISTS foods (
     extra           TEXT NOT NULL DEFAULT '{{}}',
     extra_meta      TEXT NOT NULL DEFAULT '{{}}',
     profile         TEXT NOT NULL DEFAULT '{{}}',
+    tcm_thermal     REAL,
+    tcm             TEXT NOT NULL DEFAULT '{{}}',
     label_image     TEXT,
     source          TEXT,
     created_at      TEXT NOT NULL DEFAULT (datetime('now','localtime'))
@@ -84,7 +91,10 @@ MIGRATIONS = [
     ("foods", "extra_meta", "TEXT NOT NULL DEFAULT '{}'"),
     ("foods", "profile", "TEXT NOT NULL DEFAULT '{}'"),
     ("log_entries", "meal", "TEXT NOT NULL DEFAULT 'snack'"),
+    ("foods", "tcm_thermal", "REAL"),
+    ("foods", "tcm", "TEXT NOT NULL DEFAULT '{}'"),
 ]
+JSON_COLS = ("extra", "extra_meta", "profile", "tcm")
 
 
 def init_db() -> None:
@@ -98,7 +108,7 @@ def init_db() -> None:
 
 def _row_to_food(row: sqlite3.Row) -> dict:
     d = dict(row)
-    for j in ("extra", "extra_meta", "profile"):
+    for j in JSON_COLS:
         d[j] = json.loads(d.get(j) or "{}")
     return d
 
@@ -141,10 +151,11 @@ def list_foods() -> list[dict]:
 def save_food(data: dict, food_id: int | None = None) -> int:
     """Insert (food_id=None) or update a food. `data['extra']` is a dict."""
     cols = ["name", "brand", "serving_size_g", "serving_desc", *NUTRIENT_COLS,
-            "extra", "extra_meta", "profile", "label_image", "source"]
+            "extra", "extra_meta", "profile", "tcm_thermal", "tcm", "label_image", "source"]
     values = [data.get(c) for c in cols]
-    for j in ("extra", "extra_meta", "profile"):
+    for j in JSON_COLS:
         values[cols.index(j)] = json.dumps(data.get(j) or {})
+    values[cols.index("tcm_thermal")] = T.parse_thermal(data.get("tcm_thermal"))
     with connect() as con:
         if food_id is None:
             cur = con.execute(
@@ -157,6 +168,24 @@ def save_food(data: dict, food_id: int | None = None) -> int:
             [*values, food_id],
         )
         return food_id
+
+
+def set_food_tcm(food_id: int, thermal: float | None, tcm: dict | None = None) -> None:
+    """Update only the TCM fields of a food (used by the backfill script)."""
+    with connect() as con:
+        con.execute("UPDATE foods SET tcm_thermal = ?, tcm = ? WHERE id = ?",
+                    (T.parse_thermal(thermal), json.dumps(tcm or {}), food_id))
+
+
+def find_food(name: str, brand: str | None = None) -> dict | None:
+    """Exact (case-insensitive) match on name and brand; used to re-attach a dataset to a DB
+    whose ids differ."""
+    with connect() as con:
+        row = con.execute(
+            "SELECT * FROM foods WHERE lower(name) = lower(?) AND coalesce(lower(brand), '') = coalesce(lower(?), '') LIMIT 1",
+            (name, brand),
+        ).fetchone()
+    return _row_to_food(row) if row else None
 
 
 def delete_food(food_id: int) -> None:
@@ -190,8 +219,15 @@ def delete_log(entry_id: int) -> None:
         con.execute("DELETE FROM log_entries WHERE id = ?", (entry_id,))
 
 
+def update_log_grams(entry_id: int, grams: float) -> bool:
+    """Change the portion of an already-logged entry. Returns False if no such entry."""
+    with connect() as con:
+        cur = con.execute("UPDATE log_entries SET grams = ? WHERE id = ?", (grams, entry_id))
+        return cur.rowcount > 0
+
+
 def _empty_totals() -> dict:
-    return {**{c: 0.0 for c in NUTRIENT_COLS}, "extra": {}}
+    return {**{c: 0.0 for c in NUTRIENT_COLS}, "extra": {}, "tcm": T.empty_totals()}
 
 
 def _accumulate(totals: dict, row, factor: float, extra: dict) -> None:
@@ -201,12 +237,17 @@ def _accumulate(totals: dict, row, factor: float, extra: dict) -> None:
     for k, v in extra.items():
         if isinstance(v, (int, float)):
             totals["extra"][k] = totals["extra"].get(k, 0.0) + v * factor
+    grams = factor * 100.0
+    kcal = None if row["kcal"] is None else row["kcal"] * factor
+    T.accumulate(totals["tcm"], row["tcm_thermal"], grams, kcal)
 
 
 def day_log(day: date) -> tuple[list[dict], dict]:
     """Entries for one day (each with scaled nutrients and its meal), plus totals.
     totals["meals"] holds a per-meal totals dict; totals["tags"] counts profile tags;
-    totals["feeds"] counts bacteria genera mentioned across the day's foods."""
+    totals["feeds"] counts bacteria genera mentioned across the day's foods.
+    totals["tcm"] (and each meal's) is a TCM accumulator; totals["tcm_score"] and
+    totals["meal_tcm"][meal] are the scored versions ready for display."""
     with connect() as con:
         rows = con.execute(
             "SELECT l.id AS entry_id, l.logged_at, l.grams, l.meal, l.note, f.* "
@@ -230,6 +271,8 @@ def day_log(day: date) -> tuple[list[dict], dict]:
         for g in e["profile"].get("feeds", []):
             totals["feeds"][g] = totals["feeds"].get(g, 0) + 1
         entries.append(e)
+    totals["tcm_score"] = T.score(totals["tcm"])
+    totals["meal_tcm"] = {m: T.score(t["tcm"]) for m, t in totals["meals"].items()}
     return entries, totals
 
 
@@ -237,7 +280,7 @@ def export_rows() -> list[dict]:
     with connect() as con:
         rows = con.execute(
             "SELECT l.id, l.logged_at, l.meal, l.grams, l.note, f.name, f.brand, "
-            f"{', '.join('f.' + c for c in NUTRIENT_COLS)}, f.extra "
+            f"{', '.join('f.' + c for c in NUTRIENT_COLS)}, f.tcm_thermal, f.extra "
             "FROM log_entries l JOIN foods f ON f.id = l.food_id ORDER BY l.logged_at"
         ).fetchall()
     return [dict(r) for r in rows]

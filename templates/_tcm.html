@@ -1,0 +1,21 @@
+{# TCM energetics widgets.
+   badge(thermal)       – small coloured pill for one food: "+1 warm"
+   gauge(score, size)   – cold→hot bar with a marker; `score` is the dict from tcm.score()
+   The basket builds the same markup in JS (index.html, renderTcm), so keep classes in sync. #}
+
+{% macro badge(thermal, title=None) -%}
+{% set b = T.band(thermal) %}
+<span class="tcm-badge {{ b.key }}" title="{{ title or ('TCM thermal nature: ' ~ b.label) }}" style="--tcm-c: {{ b.colour }}">{{ T.fmt(thermal) }}{% if thermal is not none %} <small>{{ b.label|lower }}</small>{% endif %}</span>
+{%- endmacro %}
+
+{% macro gauge(score, size="md", show_coverage=True) -%}
+<div class="tcm-gauge {{ size }} {{ score.band }}" style="--tcm-c: {{ score.colour }}" title="TCM thermal score: {{ score.text }} ({{ score.label }}){% if score.known and score.coverage < 100 %}, based on {{ score.coverage }}% of the meal{% endif %}">
+  <div class="tcm-track"><span class="tcm-marker" style="left: {{ score.pct|round(1) }}%"></span></div>
+  <div class="tcm-legend"><span>cold</span><span>cool</span><span>neutral</span><span>warm</span><span>hot</span></div>
+  <div class="tcm-readout">
+    <strong>{{ score.text }}</strong> <span class="tcm-label">{{ score.label }}</span>
+    {% if show_coverage and score.known and score.coverage < 100 %}<em class="fmeta">· {{ score.coverage }}% of the meal assessed</em>{% endif %}
+    {% if not score.known %}<em class="fmeta">· no items assessed yet</em>{% endif %}
+  </div>
+</div>
+{%- endmacro %}

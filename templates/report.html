@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Report{% endblock %}
+{% from "_tcm.html" import gauge %}
 {% block content %}
 <div class="dayhead">
   <a href="/report?day={{ (day.toordinal() - 1)|dateord }}">‹</a>
@@ -31,9 +32,13 @@
 {% endfor %}
 </ul>
 
+<h2>TCM energetics</h2>
+<p class="hint">Weighted mean of each food's thermal nature (−2 cold … +2 hot), weighted by {{ T.WEIGHTING }}.</p>
+{{ gauge(totals.tcm_score, "lg") }}
+
 <h2>By meal</h2>
 <table class="meals">
-  <tr><th></th><th>kcal</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>Fibre</th></tr>
+  <tr><th></th><th>kcal</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>Fibre</th><th>TCM</th></tr>
   {% for meal in MEALS if meal in totals.meals %}{% set m = totals.meals[meal] %}
   <tr>
     <td>
@@ -41,6 +46,7 @@
       <br><button type="button" class="quiet linkish" style="font-size: 0.8em; margin-top: 4px;" onclick="getSummary('meal', '{{ day.isoformat() }}', '{{ meal }}')">Summary</button>
     </td>
     <td>{{ m.kcal|round|int }}</td><td>{{ m.protein_g|round(1) }}</td><td>{{ m.carbs_g|round(1) }}</td><td>{{ m.fat_g|round(1) }}</td><td>{{ m.fibre_g|round(1) }}</td>
+    {% set ms = totals.meal_tcm[meal] %}<td><span class="tcm-badge {{ ms.band }}" style="--tcm-c: {{ ms.colour }}">{{ ms.text }}</span></td>
   </tr>
   {% endfor %}
 </table>

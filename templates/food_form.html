@@ -61,6 +61,28 @@
   <label>Training note <input type="text" name="profile_training_note" value="{{ p.get('training_note', '') }}"></label>
   <label>Microbiome note <input type="text" name="profile_microbiome_note" value="{{ p.get('microbiome_note', '') }}"></label>
 
+  <h2>TCM energetics</h2>
+  {% set t = food.tcm or {} %}
+  <p class="hint">Thermal nature on a cold→hot scale; this is what the meal score is built from.
+    {% if t.source %}Current value came from <span class="src {{ 'estimate' if 'gemini' in t.source else 'manual' }}">{{ t.source }}{% if t.confidence %} · {{ t.confidence }}{% endif %}</span>; changing it marks it manual.{% endif %}</p>
+  <input type="hidden" name="tcm_source" value="{{ t.source or '' }}">
+  <input type="hidden" name="tcm_confidence" value="{{ t.confidence or '' }}">
+  <input type="hidden" name="tcm_prev" value="{{ food.tcm_thermal if food.tcm_thermal is not none else '' }}">
+  <div class="grid">
+    <label>Thermal nature
+      <select name="tcm_thermal" id="tcm_thermal">
+        <option value="" {% if food.tcm_thermal is none %}selected{% endif %}>Not assessed</option>
+        {% for val, label in T.THERMAL_CHOICES %}
+        <option value="{{ val }}" {% if food.tcm_thermal is not none and (food.tcm_thermal|float) == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Flavours <input type="text" name="tcm_flavours" value="{{ t.get('flavours', [])|join(', ') }}" placeholder="sweet, pungent" list="flavourlist"></label>
+  </div>
+  <datalist id="flavourlist">{% for f in T.FLAVOURS %}<option value="{{ f }}">{% endfor %}</datalist>
+  <label>Organ affinities <input type="text" name="tcm_organs" value="{{ t.get('organs', [])|join(', ') }}" placeholder="spleen, stomach"></label>
+  <label>Energetic action <input type="text" name="tcm_note" value="{{ t.get('note', '') }}" placeholder="e.g. clears heat, drains damp"></label>
+
   <button type="submit" class="primary">{{ 'Save changes' if food_id else 'Save food' }}</button>
 </form>
 

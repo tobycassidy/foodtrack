@@ -10,12 +10,13 @@ from datetime import date, datetime
 from pathlib import Path
 
 from fastapi import FastAPI, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 import db
 import nutrients as N
+import tcm as T
 from gemini_extract import extract_label, summarize_nutrition
 
 BASE = Path(__file__).parent
@@ -25,6 +26,7 @@ templates = Jinja2Templates(directory=BASE / "templates")
 templates.env.globals["NUTRIENTS"] = db.NUTRIENTS
 templates.env.globals["MEALS"] = db.MEALS
 templates.env.globals["N"] = N
+templates.env.globals["T"] = T
 templates.env.filters["dateord"] = lambda n: date.fromordinal(n).isoformat()
 
 
@@ -81,6 +83,25 @@ def _food_from_form(form) -> dict:
         if v:
             profile[key] = v
     data["profile"] = profile
+
+    # TCM energetics: one number plus descriptive extras. Keep the existing provenance
+    # unless the user changed the value by hand.
+    thermal = T.parse_thermal(form.get("tcm_thermal"))
+    tcm = {}
+    for key in ("flavours", "organs"):
+        v = [x.strip().lower() for x in form.get(f"tcm_{key}", "").split(",") if x.strip()]
+        if v:
+            tcm[key] = v
+    note = form.get("tcm_note", "").strip()
+    if note:
+        tcm["note"] = note
+    prev_source, prev_conf, prev_val = form.get("tcm_source") or "", form.get("tcm_confidence") or "", form.get("tcm_prev")
+    if thermal is not None:
+        if prev_source and T.parse_thermal(prev_val) == thermal:
+            tcm["source"], tcm["confidence"] = prev_source, prev_conf or "medium"
+        else:
+            tcm["source"], tcm["confidence"] = "manual", "high"
+    data["tcm_thermal"], data["tcm"] = thermal, tcm
     return data
 
 
@@ -94,6 +115,8 @@ def index(request: Request, day: str | None = None, log: int | None = None):
         "day": d, "day_label": f"{d:%A} {d.day} {d:%B}", "entries": entries, "totals": totals,
         "recent": db.search_foods("", limit=8),
         "prefill": db.get_food(log) if log else None,
+        "tcm_cfg": {"weighting": T.WEIGHTING, "bands": [[u, k, l, c] for u, k, l, c in T.BANDS],
+                    "min": T.SCALE_MIN, "max": T.SCALE_MAX},
     })
 
 
@@ -135,6 +158,7 @@ async def summary(request: Request):
     for c in db.NUTRIENT_COLS:
         agg[c] = 0.0
     agg["extra"] = {}
+    tcm_tot = T.empty_totals()
 
     if scope in ("daily", "meal") and day:
         d = date.fromisoformat(day)
@@ -144,12 +168,14 @@ async def summary(request: Request):
                 agg[c] = totals.get(c, 0.0)
             agg["extra"] = totals.get("extra", {})
             agg["foods"] = [e["name"] for e in entries]
+            tcm_tot = totals["tcm"]
         else:
             mtotals = totals["meals"].get(meal, db._empty_totals())
             for c in db.NUTRIENT_COLS:
                 agg[c] = mtotals.get(c, 0.0)
             agg["extra"] = mtotals.get("extra", {})
             agg["foods"] = [e["name"] for e in entries if e["meal"] == meal]
+            tcm_tot = mtotals["tcm"]
     elif scope == "basket":
         for item in basket:
             food = db.get_food(int(item["id"]))
@@ -164,7 +190,12 @@ async def summary(request: Request):
             for k, v in food.get("extra", {}).items():
                 if isinstance(v, (int, float)):
                     agg["extra"][k] = agg["extra"].get(k, 0.0) + v * factor
+            T.accumulate(tcm_tot, food.get("tcm_thermal"), grams, (food.get("kcal") or 0) * factor if food.get("kcal") is not None else None)
 
+    sc = T.score(tcm_tot)
+    if sc["known"]:
+        agg["tcm"] = {"score": sc["value"], "band": sc["label"], "coverage_pct": sc["coverage"],
+                      "scale": "-2 cold, -1 cool, 0 neutral, +1 warm, +2 hot"}
     try:
         text = summarize_nutrition(agg)
     except Exception as e:
@@ -200,6 +231,27 @@ def report(request: Request, day: str | None = None):
 @app.post("/log/{entry_id}/delete")
 def log_delete(entry_id: int, day: str = Form("")):
     db.delete_log(entry_id)
+    return RedirectResponse(f"/?day={day}" if day else "/", status_code=303)
+
+
+@app.post("/log/{entry_id}/grams")
+async def log_grams(request: Request, entry_id: int):
+    """Edit the portion of a logged entry in place. Accepts JSON {grams} (from the inline
+    editor) or a form field; returns JSON or redirects accordingly."""
+    ctype = request.headers.get("content-type", "")
+    if "json" in ctype:
+        body = await request.json()
+        grams, day = _num(str(body.get("grams", ""))), body.get("day")
+    else:
+        form = await request.form()
+        grams, day = _num(form.get("grams")), form.get("day", "")
+    if grams is None or grams <= 0:
+        if "json" in ctype:
+            return JSONResponse({"ok": False, "error": "grams must be a positive number"}, status_code=400)
+        return RedirectResponse(f"/?day={day}" if day else "/", status_code=303)
+    ok = db.update_log_grams(entry_id, grams)
+    if "json" in ctype:
+        return JSONResponse({"ok": ok, "grams": grams}, status_code=200 if ok else 404)
     return RedirectResponse(f"/?day={day}" if day else "/", status_code=303)
 
 

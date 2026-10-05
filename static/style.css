@@ -132,3 +132,40 @@ table.meals td:first-child { text-align: left; text-transform: capitalize; }
 .basket .fname .fmeta { display: block; font-size: 0.78rem; }
 .linkish { display: block; width: 100%; margin-top: 0.4rem; font-size: 0.85rem; text-decoration: underline; }
 .addnew { margin: 0.3rem 0 0; }
+
+/* ---- TCM energetics ---- */
+.tcm-badge { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.05rem 0.45rem; border-radius: 999px;
+  color: #fff; background: var(--tcm-c, #c9c6bc); vertical-align: middle; white-space: nowrap; line-height: 1.5; }
+.tcm-badge small { font-weight: 400; font-size: 0.68rem; opacity: 0.9; }
+.tcm-badge.unknown { color: var(--muted); background: #eeece6; border: 1px dashed var(--line); }
+.tcm-badge.neutral { color: #fff; }
+.fname .tcm-badge { margin-left: 0.3rem; }
+
+.tcm-gauge { margin: 0.4rem 0 0.2rem; }
+.tcm-track { position: relative; height: 10px; border-radius: 5px;
+  background: linear-gradient(90deg, #2a6fd6 0%, #5aa0e6 25%, #d9d6cc 50%, #e08a3c 75%, #c9452b 100%); }
+.tcm-marker { position: absolute; top: 50%; width: 18px; height: 18px; border-radius: 50%; background: #fff;
+  border: 3px solid var(--tcm-c, #8c938e); transform: translate(-50%, -50%); box-shadow: 0 1px 3px rgba(0,0,0,0.25); transition: left 0.25s; }
+.tcm-gauge.unknown .tcm-marker { border-style: dashed; border-color: #a9a69c; }
+.tcm-legend { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--muted); margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.tcm-readout { margin-top: 0.25rem; font-size: 0.95rem; }
+.tcm-readout strong { color: var(--tcm-c, var(--ink)); font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.tcm-readout .tcm-label { color: var(--muted); }
+.tcm-readout em { display: inline; font-style: normal; }
+.tcm-gauge.lg .tcm-track { height: 14px; } .tcm-gauge.lg .tcm-readout strong { font-size: 1.35rem; }
+.tcm-gauge.sm .tcm-track { height: 8px; } .tcm-gauge.sm .tcm-marker { width: 14px; height: 14px; }
+.tcm-gauge.xs { margin: 0.1rem 0 0.3rem; max-width: 22rem; }
+.tcm-gauge.xs .tcm-track { height: 6px; } .tcm-gauge.xs .tcm-marker { width: 12px; height: 12px; border-width: 2px; }
+.tcm-gauge.xs .tcm-legend, .tcm-gauge.xs .tcm-readout { display: none; }
+.tcm-block { border-top: 1px solid var(--line); margin-top: 0.65rem; padding-top: 0.55rem; }
+.tcm-whatif { margin: 0.35rem 0 0; font-size: 0.8rem; }
+.tcm-whatif b { color: var(--ink); }
+.day-tcm { margin: 0.25rem 0 0.5rem; }
+.mealhead .tcm-badge { margin-left: 0.4rem; text-transform: none; }
+
+/* inline grams editor on logged entries */
+.grams-edit { border: none; background: none; padding: 0; font: inherit; color: var(--leaf); cursor: pointer; text-decoration: underline dotted; }
+.grams-inline { width: 5rem !important; padding: 0.15rem 0.4rem !important; font-size: 0.9rem !important; display: inline-block; }
+select { width: 100%; font: inherit; padding: 0.55rem 0.7rem; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); margin-top: 0.25rem; }
+.tcm-block .summary-title { white-space: nowrap; }
+.tcm-block .summary-head .fmeta { font-size: 0.78rem; text-align: right; }
